@@ -11,10 +11,10 @@ namespace DALOptimizer
 	{
 		public void StringIndexOfStringCalls(List<string> list)
 		{
-			list[0].IndexOf(".com");
-			list[0].IndexOf(".com", 0);
-			list[0].IndexOf(".com", 0, 5);
-			list[0].IndexOf(list[1], 0, 10);
+			list[0].IndexOf(".com", StringComparison.Ordinal);
+			list[0].IndexOf(".com", 0, StringComparison.Ordinal);
+			list[0].IndexOf(".com", 0, 5, StringComparison.Ordinal);
+			list[0].IndexOf(list[1], 0, 10, StringComparison.Ordinal);
 		}
 		
 		public void StringIndexOfStringCallsWithComparison(List<string> list)
