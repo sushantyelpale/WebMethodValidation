@@ -48,5 +48,6 @@ namespace DALOptimizer
 		}
 		
 		public List<InvocationExpression> IndexOfInvocations = new List<InvocationExpression>();
+        public List<FieldDeclaration> IndexOfFieldDecl = new List<FieldDeclaration>();
 	}
 }

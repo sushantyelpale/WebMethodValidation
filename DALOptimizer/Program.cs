@@ -25,14 +25,36 @@ namespace DALOptimizer
 				Console.ReadKey(true);
 				return;
 			}
-			
+
+            //int count = 0;
+            MatchExpr Mr = new MatchExpr();
+            
 			Solution solution = new Solution(args[0]);
 			foreach (var file in solution.AllFiles) {
-				var astResolver = new CSharpAstResolver(file.Project.Compilation, file.SyntaxTree, file.UnresolvedTypeSystemForFile);
-				foreach (var invocation in file.SyntaxTree.Descendants.OfType<InvocationExpression>()) {
+                if(file.FileName!="D:\\DALProject\\DAL\\ActDeactUserDAL.cs")
+                {
+                    continue;
+                }
+                var astResolver = new CSharpAstResolver(file.Project.Compilation, file.SyntaxTree, file.UnresolvedTypeSystemForFile);
+				foreach (var invocation in file.SyntaxTree.Descendants.OfType<AstNode>()) {
 					// Retrieve semantics for the invocation
-					var rr = astResolver.Resolve(invocation) as InvocationResolveResult;
-					if (rr == null) {
+
+                    if (invocation.GetType().Name == "InvocationExpression")
+                    {
+                        //check Global
+                        Mr.MatchTypeDecl(invocation, file, astResolver);
+                        continue;
+                    }
+
+                    // For All Global Declarations
+                    if (invocation.GetType().Name == "FieldDeclaration")
+                    {
+                        Mr.MatchFieldDecl(invocation, file, astResolver);
+                        continue;
+                    }
+                  
+               
+/*                  if (rr == null) {
 						// Not an invocation resolve result - e.g. could be a UnknownMemberResolveResult instead
 						continue;
 					}
@@ -49,18 +71,22 @@ namespace DALOptimizer
 						// Already using the overload that specifies a StringComparison
 						continue;
 					}
-					Console.WriteLine(invocation.GetRegion() + ": " + invocation.GetText());
-					file.IndexOfInvocations.Add(invocation);
+					//Console.WriteLine(invocation.GetRegion() + ": " + invocation.GetText());
+	*/				
 				}
 			}
-			Console.WriteLine("Found {0} places to refactor in {1} files.",
+			Console.WriteLine("Found {0} places to refactor Invocation Expression in {1} files.",
 			                  solution.AllFiles.Sum(f => f.IndexOfInvocations.Count),
 			                  solution.AllFiles.Count(f => f.IndexOfInvocations.Count > 0));
-			Console.Write("Apply refactorings? ");
+            Console.WriteLine("Found {0} places to refactor Field Declaration in {1} files.",
+                  solution.AllFiles.Sum(f => f.IndexOfFieldDecl.Count),
+                  solution.AllFiles.Count(f => f.IndexOfFieldDecl.Count > 0));
+
+            Console.Write("Apply refactorings? ");
 			string answer = Console.ReadLine();
 			if ("yes".Equals(answer, StringComparison.OrdinalIgnoreCase) || "y".Equals(answer, StringComparison.OrdinalIgnoreCase)) {
 				foreach (var file in solution.AllFiles) {
-					if (file.IndexOfInvocations.Count == 0)
+					if (file.IndexOfFieldDecl.Count == 0)
 						continue;
 					// DocumentScript expects the the AST to stay unmodified (so that it fits
 					// to the document state at the time of the DocumentScript constructor call),
@@ -75,20 +101,23 @@ namespace DALOptimizer
 					var formattingOptions = FormattingOptionsFactory.CreateAllman();
 					var options = new TextEditorOptions();
 					using (var script = new DocumentScript(document, formattingOptions, options)) {
-						foreach (InvocationExpression expr in file.IndexOfInvocations) {
+						foreach (FieldDeclaration expr in file.IndexOfFieldDecl) {
 							// Generate a reference to System.StringComparison in this context:
 							var astBuilder = new TypeSystemAstBuilder(astResolver.GetResolverStateBefore(expr));
 							IType stringComparison = compilation.FindType(typeof(StringComparison));
 							AstType stringComparisonAst = astBuilder.ConvertType(stringComparison);
-							
+
+
 							// Alternative 1: clone a portion of the AST and modify it
-							var copy = (InvocationExpression)expr.Clone();
-							copy.Arguments.Add(stringComparisonAst.Member("Ordinal"));
-							script.Replace(expr, copy);
-							
-//							// Alternative 2: perform direct text insertion
-//							int offset = script.GetCurrentOffset(expr.RParToken.StartLocation);
-//							script.InsertText(offset, ", " + stringComparisonAst.GetText() +  ".Ordinal");
+							var copy = (FieldDeclaration)expr.Clone();
+							//copy.Arguments.Add(stringComparisonAst.Member("Ordinal"));
+
+                            if (expr.GetText() == "private static string constr = ConnectionClass.connect ();\r\n")
+                            {
+                                int offset = script.GetCurrentOffset(expr.StartLocation);
+                                script.Replace(offset, expr.GetRegion().ToString().Length, "DatabaseProcessing db = new DatabaseProcessing();\r\n");
+                            }
+
 						}
 					}
 					File.WriteAllText(Path.ChangeExtension(file.FileName, ".output.cs"), document.Text);

@@ -1,7 +1,8 @@
+
 using System;
 using System.Collections.Generic;
 
-namespace DALOptimizer
+namespace StringIndexOf
 {
 	/// <summary>
 	/// This class contains various IndexOf calls.
@@ -9,12 +10,17 @@ namespace DALOptimizer
 	/// </summary>
 	public class Test
 	{
-		public void StringIndexOfStringCalls(List<string> list)
+       public void StringIndexOfStringCalls(List<string> list)
 		{
 			list[0].IndexOf(".com");
 			list[0].IndexOf(".com", 0);
 			list[0].IndexOf(".com", 0, 5);
 			list[0].IndexOf(list[1], 0, 10);
+            list[0].IndexOf(list[1], 3, 1);
+            list[2].IndexOf(list[2], 3, 1);
+            list[2].Insert(2,"5");
+            list[2].Insert(2, "5");
+            list[100].IndexOf(list[000000002], 3, 1);
 		}
 		
 		public void StringIndexOfStringCallsWithComparison(List<string> list)
@@ -23,17 +29,8 @@ namespace DALOptimizer
 			list[0].IndexOf(".com", 0, StringComparison.OrdinalIgnoreCase);
 			list[0].IndexOf(".com", 0, 5, StringComparison.OrdinalIgnoreCase);
 			list[0].IndexOf(list[1], 0, 10, StringComparison.OrdinalIgnoreCase);
+            
 		}
 		
-		public void StringIndexOfCharCalls(List<string> list)
-		{
-			list[0].IndexOf('.');
-			Environment.CommandLine.IndexOf('/');
-		}
-		
-		public void OtherIndexOfCalls(List<string> list)
-		{
-			list.IndexOf(".com");
-		}
 	}
 }
