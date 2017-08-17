@@ -49,5 +49,9 @@ namespace DALOptimizer
 		
 		public List<InvocationExpression> IndexOfInvocations = new List<InvocationExpression>();
         public List<FieldDeclaration> IndexOfFieldDecl = new List<FieldDeclaration>();
+        public List<PropertyDeclaration> IndexOfPropDecl = new List<PropertyDeclaration>();
+        public List<BlockStatement> IndexOfBlockStmt = new List<BlockStatement>();
+        public List<AssignmentExpression> IndexOfAssExpr = new List<AssignmentExpression>();
+        public List<ExpressionStatement> IndexOfExprStmt = new List<ExpressionStatement>();
 	}
 }
