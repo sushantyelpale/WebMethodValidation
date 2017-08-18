@@ -92,30 +92,36 @@ namespace DALOptimizer
             return expr;
         }
 
-        //cmd = new SqlCommand("InsertTicket", con);
+       
+        //Replaced by cmd = new SqlCommand("InsertTicket", con);
         public AssignmentExpression sqlCmdstmt()
         {
             var expr = new AssignmentExpression
-            {
-                Left = new IdentifierExpression(Pattern.AnyString),
-                Right = new ObjectCreateExpression {
-                    Type = new SimpleType("SqlCommand"),
-                    Arguments = { new AnyNode("PrimitiveExpression"), new IdentifierExpression(Pattern.AnyString) }
-                    } 
+                {
+                    Left = new IdentifierExpression(Pattern.AnyString),
+                    Right = new ObjectCreateExpression
+                    {
+                        Type = new SimpleType("SqlCommand"),
+                        Arguments = { new AnyNode("PrimitiveExpression"), new IdentifierExpression(Pattern.AnyString) }
+                    }
             };
             return expr;
         }
 
+
+
         //conn = new SqlConnection(constr);
-        public AssignmentExpression sqlConnstmt()
+        public ExpressionStatement sqlConnstmt()
         {
-            var expr = new AssignmentExpression
-            {
-                Left = new IdentifierExpression(Pattern.AnyString),
-                Right = new ObjectCreateExpression
+            var expr = new ExpressionStatement{
+                 Expression = new AssignmentExpression
                 {
-                    Type = new SimpleType("SqlConnection"),
-                    Arguments = { new IdentifierExpression(Pattern.AnyString) }
+                    Left = new IdentifierExpression(Pattern.AnyString),
+                    Right = new ObjectCreateExpression
+                    {
+                        Type = new SimpleType("SqlConnection"),
+                        Arguments = { new IdentifierExpression(Pattern.AnyString) }
+                    }
                 }
             };
             return expr;
@@ -138,12 +144,16 @@ namespace DALOptimizer
                     }
                 }
             };
+            return expr;
+        }
 
-/*            var expr = new ExpressionStatement
-            {
-                Expression
+
+        public ParameterDeclaration methd()
+        {
+            var expr = new ParameterDeclaration { 
+                Type = new AnyNode()
             };
-            */
+
             return expr;
         }
 
@@ -157,12 +167,13 @@ namespace DALOptimizer
                     Right = new InvocationExpression
                     {
                         Target = new MemberReferenceExpression { 
-                            Target = new IdentifierExpression("cmd"),
+                            Target = new IdentifierExpression(Pattern.AnyString),
                         MemberName = "ExecuteNonQuery"
                         }
                     }
                 }
             };
+
             return expr;
         }
 
@@ -192,25 +203,34 @@ namespace DALOptimizer
             };
             return expr;
         }
-        //new LoggerProcessing().write(ex);
-        public ExpressionStatement LoggrProcExprStmt()
+
+        //catch clause
+        public CatchClause ctchclause()
         {
-            var Expr = new ExpressionStatement
+            var expr = new CatchClause
             {
-                Expression = new InvocationExpression
-                {
-                    Target = new MemberReferenceExpression
+                Type = new SimpleType("Exception"),
+                VariableName = "ex",
+                Body = new BlockStatement { 
+                    new ExpressionStatement
                     {
-                        Target = new ObjectCreateExpression { 
-                            Type = new SimpleType("LoggerProcessing")
-                        },
-                        MemberName = "write"
-                    },
-                    Arguments = { new IdentifierExpression("ex") }
+                        Expression = new InvocationExpression
+                        {
+                            Target = new MemberReferenceExpression
+                            {
+                                Target = new ObjectCreateExpression { 
+                                    Type = new SimpleType("LoggerProcessing")
+                                },
+                                MemberName = "write"
+                            },
+                            Arguments = { new IdentifierExpression("ex") }
+                        }
+                    }
                 }
             };
-            return Expr;
+            return expr;
         }
+
 
         //finally Block
         public BlockStatement FinalyBlck()
@@ -247,12 +267,13 @@ namespace DALOptimizer
                     {
                         Type = new MemberType
                         {
-                            Target = new SimpleType(Pattern.AnyString)
+                            Target = new SimpleType(Pattern.AnyString),
+                            MemberName = Pattern.AnyString
                         },
                         Name = Pattern.AnyString
                     },
                 },
-                Body = new BlockStatement()
+                Body = new AnyNode("BlockStatement")
             };
             return expr;
         }

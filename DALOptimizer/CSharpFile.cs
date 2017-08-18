@@ -53,5 +53,7 @@ namespace DALOptimizer
         public List<BlockStatement> IndexOfBlockStmt = new List<BlockStatement>();
         public List<AssignmentExpression> IndexOfAssExpr = new List<AssignmentExpression>();
         public List<ExpressionStatement> IndexOfExprStmt = new List<ExpressionStatement>();
+        public List<CatchClause> IndexOfCtchClause = new List<CatchClause>();
+        public List<MethodDeclaration> IndexOfMthdDecl = new List<MethodDeclaration>();
 	}
 }

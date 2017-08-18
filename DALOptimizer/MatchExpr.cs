@@ -38,30 +38,9 @@ namespace DALOptimizer
             }
         }
 
-        //Match Assignment Expression
-        //conn = new SqlConnection(constr);
-        public void MatchAssExpr(AstNode invocation, CSharpFile file, CSharpAstResolver astResolver)
+        public void MatchCatchClause(AstNode invocation, CSharpFile file, CSharpAstResolver astResolver)
         {
-            var expr1 = Pat.sqlCmdstmt();
-            var expr2 = Pat.sqlConnstmt();
-            
-           
-
-            Match m1 = expr1.Match(invocation);
-            Match m2 = expr2.Match(invocation);
-           
-            if (m1.Success)
-            {
-                file.IndexOfAssExpr.Add((AssignmentExpression)invocation);
-                Console.WriteLine("new_Line:" + invocation.GetRegion().Begin.Line + "  Invocation: " + invocation.GetText().ToString());
-            }
-            if (m2.Success)
-            {
-                file.IndexOfAssExpr.Add((AssignmentExpression)invocation);
-                Console.WriteLine("new_Line1:" + invocation.GetRegion().Begin.Line + "  Invocation: " + invocation.GetText().ToString());
-            }
-           
-
+            file.IndexOfCtchClause.Add((CatchClause)invocation);
         }
 
         //Match Invocation Expression
@@ -73,6 +52,19 @@ namespace DALOptimizer
             Console.WriteLine("Line:" + invocation.GetRegion().Begin.Line + "  Invocation Expresson: " + invocation.GetText().ToString());        
         }
 
+        public void MatchAssExpr(AstNode invocation, CSharpFile file, CSharpAstResolver astResolver)
+        {
+            var expr6 = Pat.sqlCmdstmt();
+            Match sqlCmdstmt = expr6.Match(invocation);
+
+            if (sqlCmdstmt.Success)
+            {
+                file.IndexOfAssExpr.Add((AssignmentExpression)invocation);
+                Console.WriteLine("new_Line:" + invocation.GetRegion().Begin.Line + "  Invocation: " + invocation.GetText().ToString());
+            }           
+        }
+
+
         //Match Expression Statement  //da.Fill(dt);
         public void MatchExprStmt(AstNode invocation, CSharpFile file, CSharpAstResolver astResolver)
         {
@@ -80,25 +72,16 @@ namespace DALOptimizer
             var expr2 = Pat.logErr();
             var expr3 = Pat.ExNonQuery();
             var expr4 = Pat.StoredProc();
+            var expr5 = Pat.sqlConnstmt();
             
             Match FillExpr = expr1.Match(invocation);
             Match logErr = expr2.Match(invocation);
             Match ExNonQuery = expr3.Match(invocation);
-            Match m4 = expr4.Match(invocation);
-            
-            if (FillExpr.Success)
-            {
-                file.IndexOfExprStmt.Add((ExpressionStatement)invocation);
-            }
-            if (logErr.Success)
-            {
-                file.IndexOfExprStmt.Add((ExpressionStatement)invocation);
-            }
-            if (ExNonQuery.Success)
-            {
-                file.IndexOfExprStmt.Add((ExpressionStatement)invocation);
-            }
-            if (m4.Success)
+            Match StoredProc = expr4.Match(invocation);
+            Match sqlConnstmt = expr5.Match(invocation);
+           
+
+            if (FillExpr.Success || logErr.Success || ExNonQuery.Success || StoredProc.Success || sqlConnstmt.Success)
             {
                 file.IndexOfExprStmt.Add((ExpressionStatement)invocation);
                 Console.WriteLine("new_Line:" + invocation.GetRegion().Begin.Line + "  Invocation: " + invocation.GetText().ToString());
@@ -113,8 +96,12 @@ namespace DALOptimizer
 
         public void MatchMethodDecl(AstNode invocation, CSharpFile file, CSharpAstResolver astResolver)
         {
-            //invocation.
-
+            var expr1 = Pat.MthdDecl();
+            Match MthdDecl = expr1.Match(invocation);
+            if (MthdDecl.Success)
+            {
+                file.IndexOfMthdDecl.Add((MethodDeclaration)invocation);
+            }
         }
 
         public void MatchBlock(AstNode invocation, CSharpFile file, CSharpAstResolver astResolver)

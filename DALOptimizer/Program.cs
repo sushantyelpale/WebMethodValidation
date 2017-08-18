@@ -39,18 +39,30 @@ namespace DALOptimizer
                 }
                 var astResolver = new CSharpAstResolver(file.Project.Compilation, file.SyntaxTree, file.UnresolvedTypeSystemForFile);
 				foreach (var invocation in file.SyntaxTree.Descendants.OfType<AstNode>()) {
-					// Retrieve semantics for the invocation
-
+					
+                    // all expressions
                     if (invocation.GetType().Name == "ExpressionStatement")
                     {
                         Mr.MatchExprStmt(invocation, file, astResolver);
                         continue;
                     }
 
+                    //catch clause
+                    if (invocation.GetType().Name == "CatchClause")
+                    {
+                        Mr.MatchCatchClause(invocation, file, astResolver);
+                    }
+
                     // For All Global Field Declarations
                     if (invocation.GetType().Name == "FieldDeclaration")
                     {
                         Mr.MatchFieldDecl(invocation, file, astResolver);
+                        continue;
+                    }
+
+                    if (invocation.GetType().Name == "AssignmentExpression")
+                    {
+                        Mr.MatchAssExpr(invocation, file, astResolver);
                         continue;
                     }
 
@@ -68,12 +80,6 @@ namespace DALOptimizer
                         continue;
                     }
 
-                    if (invocation.GetType().Name == "AssignmentExpression")
-                    {
-                        Mr.MatchAssExpr(invocation, file, astResolver);
-                        continue;
-                    }
-
                     if (invocation.GetType().Name == "ParameterDeclaration")
                     {
                         if (invocation.Parent.GetType().Name == "MethodDeclaration")
@@ -82,6 +88,13 @@ namespace DALOptimizer
                             continue;
                         }
                     }
+
+                    if (invocation.GetType().Name == "MethodDeclaration")
+                    {
+                        Mr.MatchMethodDecl(invocation, file, astResolver);
+                        continue;
+                    }
+
 				}
 			}
 
@@ -150,14 +163,20 @@ namespace DALOptimizer
 
                             var copy = (BlockStatement)expr.Clone();
                             AllPatterns Pat = new AllPatterns();
-                            script.Replace(expr, Pat.FinalyBlck());
-                            //int offset = script.GetCurrentOffset(expr.StartLocation);
-                            //script.Remove(expr, false);
-                            
-                            //script.InsertText(offset, "{}\r\n");                               
+                            script.Replace(expr, Pat.FinalyBlck());                             
                         }
 
-                        //in catch block add      "string txt = "new LoggerProcessing().write(ex);"
+                        foreach (var expr in file.IndexOfCtchClause)
+                        {
+                            var astBuilder = new TypeSystemAstBuilder(astResolver.GetResolverStateBefore(expr));
+                            IType stringComparison = compilation.FindType(typeof(StringComparison));
+                            AstType stringComparisonAst = astBuilder.ConvertType(stringComparison);
+
+                            var copy = (CatchClause)expr.Clone();
+                            AllPatterns Pat = new AllPatterns();
+                            script.Replace(expr, Pat.ctchclause());
+                        }
+
                         foreach (var expr in file.IndexOfExprStmt)
                         {
                             var astBuilder = new TypeSystemAstBuilder(astResolver.GetResolverStateBefore(expr));
@@ -167,22 +186,16 @@ namespace DALOptimizer
                             int offset = script.GetCurrentOffset(expr.StartLocation);
 
                             AllPatterns Pat = new AllPatterns();
-                            var expr2 = Pat.logErr();
                             var expr3 = Pat.StoredProc();
+                            var expr4 = Pat.sqlConnstmt();
 
-                            ICSharpCode.NRefactory.PatternMatching.Match logErr = expr2.Match(expr);
                             ICSharpCode.NRefactory.PatternMatching.Match StoredProc = expr3.Match(expr);
+                            ICSharpCode.NRefactory.PatternMatching.Match sqlConnstmt = expr4.Match(expr);
 
-                            if (logErr.Success)
-                            {
-                                script.Replace(expr, Pat.LoggrProcExprStmt());
-                            }
-
-                            if (StoredProc.Success)
+                            if (StoredProc.Success || sqlConnstmt.Success)
                             {
                                 script.Remove(expr, true);
                             }
-
                         }
 
                         foreach (var expr in file.IndexOfAssExpr)
@@ -190,23 +203,38 @@ namespace DALOptimizer
                             var astBuilder = new TypeSystemAstBuilder(astResolver.GetResolverStateBefore(expr));
                             IType stringComparison = compilation.FindType(typeof(StringComparison));
                             AstType stringComparisonAst = astBuilder.ConvertType(stringComparison);
-
                             var copy = (AssignmentExpression)expr.Clone();
-                            int offset = script.GetCurrentOffset(expr.StartLocation);
+                            //int offset = script.GetCurrentOffset(expr.StartLocation);
 
                             AllPatterns Pat = new AllPatterns();
-                            var expr2 = Pat.sqlConnstmt();
-                            
-                            ICSharpCode.NRefactory.PatternMatching.Match sqlConnstmt = expr2.Match(expr);
-                         
+                            var expr3 = Pat.sqlCmdstmt();
+                            ICSharpCode.NRefactory.PatternMatching.Match sqlCmdstmt = expr3.Match(expr);
 
-                            if (sqlConnstmt.Success)
+                            if (sqlCmdstmt.Success)
                             {
-                                script.InsertText(offset, "SqlConnection ");
-                                //script.Remove(expr, false);
-                                continue;
+                                int start = script.GetCurrentOffset(expr.LastChild.LastChild.PrevSibling.PrevSibling.StartLocation);
+                                int end = script.GetCurrentOffset(expr.LastChild.LastChild.PrevSibling.EndLocation);
+                                int length = end - start;
+                                script.RemoveText(start,length);
                             }
-                        }    
+                        }
+
+                        // for changing API.RegistrationAPI objAPI in method declaration
+                        foreach (var expr in file.IndexOfMthdDecl)
+                        {
+                            var astBuilder = new TypeSystemAstBuilder(astResolver.GetResolverStateBefore(expr));
+                            IType stringComparison = compilation.FindType(typeof(StringComparison));
+                            AstType stringComparisonAst = astBuilder.ConvertType(stringComparison);
+
+                            var copy = (MethodDeclaration)expr.Clone();
+                            AllPatterns Pat = new AllPatterns();
+
+                            var chldOfTypPar = expr.GetChildByRole(Roles.Parameter);
+                            string input = Regex.Replace(chldOfTypPar.GetText(), @"\w+\.\b","");
+                            int offset = script.GetCurrentOffset(chldOfTypPar.StartLocation);
+                            script.RemoveText(offset,chldOfTypPar.GetText().Length);
+                            script.InsertText(offset,input);
+                        }
   					}
 					File.WriteAllText(Path.ChangeExtension(file.FileName, ".output.cs"), document.Text);
 				}
