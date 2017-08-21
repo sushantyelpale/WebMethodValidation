@@ -17,44 +17,44 @@ namespace DALOptimizer
 {
     class AllPatterns
     {
-
         //conn.close() Pattern
-        public InvocationExpression ConnCloseInvExpr()
+        public ExpressionStatement ConnCloseExprStmt()
         {
-            var expr = new InvocationExpression
-            {
-                Target = new MemberReferenceExpression
-                {
-                    Target = new IdentifierExpression("conn"),
-                    MemberName = "Close"
+            var expr = new ExpressionStatement{
+                Expression = new InvocationExpression{
+                    Target = new MemberReferenceExpression{
+                        Target = new IdentifierExpression("conn"),
+                        MemberName = "Close"
+                    }
                 }
             };
             return expr;
         }
 
         //cmd.Dispose() Pattern
-        public InvocationExpression CmdDispose()
+        public ExpressionStatement CmdDisposeExprStmt()
         {
-            var expr = new InvocationExpression {
-                Target = new MemberReferenceExpression
-                {
-                    Target = new IdentifierExpression("conn"),
-                    MemberName = "Dispose"
+            var expr = new ExpressionStatement{
+                Expression = new InvocationExpression{
+                    Target = new MemberReferenceExpression{
+                        Target = new IdentifierExpression("conn"),
+                        MemberName = "Dispose"
+                    }
                 }
             };
             return expr;
         }
 
         //conn.open()
-        public InvocationExpression ConnOpenInvExpr()
+        public ExpressionStatement ConnOpenExprStmt()
         {
-            var expr = new InvocationExpression
-            {
-                Target = new MemberReferenceExpression
-                {
-                    Target = new IdentifierExpression("conn"),
-                    MemberName = "Open"
-                }
+            var expr = new ExpressionStatement{
+                Expression = new InvocationExpression{
+                   Target = new MemberReferenceExpression{
+                       Target = new IdentifierExpression("conn"),
+                       MemberName = "Open"
+                   }
+               }
             };
             return expr;
         }
@@ -62,10 +62,8 @@ namespace DALOptimizer
         //da.Fill(dt);
         public ExpressionStatement FillExpr()
         {
-            var Expr = new ExpressionStatement
-            {
-                Expression = new InvocationExpression
-                {
+            var Expr = new ExpressionStatement{
+                Expression = new InvocationExpression{
                     Target = new MemberReferenceExpression { 
                         Target = new IdentifierExpression(Pattern.AnyString),
                         MemberName = "Fill"
@@ -81,10 +79,8 @@ namespace DALOptimizer
         //ConnectionClass.connect()
         public InvocationExpression ConnectionClassconnectExpr()
         {
-            var expr = new InvocationExpression
-            {
-                Target = new MemberReferenceExpression
-                {
+            var expr = new InvocationExpression{
+                Target = new MemberReferenceExpression{
                     Target = new IdentifierExpression("ConnectionClass"),
                     MemberName = "connect"
                 }
@@ -92,33 +88,66 @@ namespace DALOptimizer
             return expr;
         }
 
-       
+        // Used for Assignment expressions
         //Replaced by cmd = new SqlCommand("InsertTicket", con);
         public AssignmentExpression sqlCmdstmt()
         {
-            var expr = new AssignmentExpression
-                {
+            var expr = new AssignmentExpression{
                     Left = new IdentifierExpression(Pattern.AnyString),
-                    Right = new ObjectCreateExpression
-                    {
+                    Right = new ObjectCreateExpression{
                         Type = new SimpleType("SqlCommand"),
-                        Arguments = { new AnyNode("PrimitiveExpression"), new IdentifierExpression(Pattern.AnyString) }
+                        Arguments = { 
+                            new AnyNode("PrimitiveExpression"), 
+                            new IdentifierExpression(Pattern.AnyString) 
+                        }
                     }
             };
             return expr;
         }
 
+        //Replaced by cmd = new SqlCommand("InsertTicket", con);  /argument of any type
+        public AssignmentExpression sqlCmdstmt1()
+        {
+            var expr = new AssignmentExpression
+            {
+                Left = new IdentifierExpression(Pattern.AnyString),
+                Right = new ObjectCreateExpression
+                {
+                    Type = new SimpleType("SqlCommand"),
+                    Arguments = { new Repeat( new AnyNode() )}
+                }
+            };
+            return expr;
+        }
 
+        // Pattern of variable Decl Stmt having sqlCommand having 2 arguments
+        //Replaced by SqlCommand cmd = new SqlCommand("InsertTicket", con);  /argument of any type
+        public VariableDeclarationStatement sqlCmdstmt2()
+        {
+            var expr = new VariableDeclarationStatement
+            {
+                Type = new SimpleType("SqlCommand"),
+                Variables = { 
+                    new VariableInitializer(
+                        Pattern.AnyString, 
+                        new ObjectCreateExpression {
+                            Type = new SimpleType("SqlCommand"),
+                            Arguments = { 
+                                new AnyNode("PrimitiveExpression"), 
+                                new IdentifierExpression(Pattern.AnyString) }
+                        })
+                }
+            };
+            return expr;
+        }
 
         //conn = new SqlConnection(constr);
         public ExpressionStatement sqlConnstmt()
         {
             var expr = new ExpressionStatement{
-                 Expression = new AssignmentExpression
-                {
+                 Expression = new AssignmentExpression{
                     Left = new IdentifierExpression(Pattern.AnyString),
-                    Right = new ObjectCreateExpression
-                    {
+                    Right = new ObjectCreateExpression{
                         Type = new SimpleType("SqlConnection"),
                         Arguments = { new IdentifierExpression(Pattern.AnyString) }
                     }
@@ -132,8 +161,7 @@ namespace DALOptimizer
         public ExpressionStatement StoredProc()
         {
             var expr = new ExpressionStatement{
-                Expression =  new AssignmentExpression
-                {
+                Expression =  new AssignmentExpression{
                     Left = new MemberReferenceExpression { 
                         Target = new IdentifierExpression(Pattern.AnyString),
                         MemberName = "CommandType"
@@ -147,25 +175,39 @@ namespace DALOptimizer
             return expr;
         }
 
-
         public ParameterDeclaration methd()
         {
             var expr = new ParameterDeclaration { 
                 Type = new AnyNode()
             };
-
             return expr;
         }
 
-        //cmd.ExecuteNonQuery()
+        //i = db.ExecuteStoredProcedure(cmd);
+        public ExpressionStatement ExeStrdProc(string variable, string objName)
+        {
+            var expr = new ExpressionStatement{
+                Expression = new AssignmentExpression{
+                    Left = new IdentifierExpression(variable),
+                    Right = new InvocationExpression{
+                        Target = new MemberReferenceExpression{
+                            Target = new IdentifierExpression("db"),
+                            MemberName = "ExecuteStoredProcedure"
+                        },
+                        Arguments = { new IdentifierExpression("cmd")}
+                    }
+                }
+            };
+            return expr;
+        }
+
+        //i = cmd.ExecuteNonQuery()
         public ExpressionStatement ExNonQuery()
         {
             var expr = new ExpressionStatement{ 
-                Expression = new AssignmentExpression
-                {
+                Expression = new AssignmentExpression{
                     Left = new IdentifierExpression(Pattern.AnyString),
-                    Right = new InvocationExpression
-                    {
+                    Right = new InvocationExpression{
                         Target = new MemberReferenceExpression { 
                             Target = new IdentifierExpression(Pattern.AnyString),
                         MemberName = "ExecuteNonQuery"
@@ -177,8 +219,23 @@ namespace DALOptimizer
             return expr;
         }
 
-        //log.Error("TicketDAL:displayTicket : " + ex.Message);
-        public ExpressionStatement logErr()
+        //db.GetDataTable(cmd);
+        public ExpressionStatement GetDtTbl(string str)
+        {
+            var expr = new ExpressionStatement{
+                Expression = new InvocationExpression{
+                    Target = new MemberReferenceExpression { 
+                        MemberName = "GetDataTable",
+                       Target = new IdentifierExpression("db")
+                    },
+                    Arguments = {new IdentifierExpression (str)},
+                }
+            };
+            return expr;
+        }
+
+        //db.GetDataSet(cmd);
+        public ExpressionStatement GetDtSet(string str)
         {
             var expr = new ExpressionStatement
             {
@@ -186,6 +243,39 @@ namespace DALOptimizer
                 {
                     Target = new MemberReferenceExpression
                     {
+                        MemberName = "GetDataSet",
+                        Target = new IdentifierExpression("db")
+                    },
+                    Arguments = { new IdentifierExpression(str) },
+                }
+            };
+            return expr;
+        }
+
+        //sda = new SqlDataAdapter(cmd);
+        public ExpressionStatement SqlDataAdapterExprStmt()
+        {
+            var expr = new ExpressionStatement
+            {
+                Expression = new AssignmentExpression
+                {
+                    Left = new IdentifierExpression(Pattern.AnyString),
+                    Right = new ObjectCreateExpression
+                    {
+                        Type = new SimpleType("SqlDataAdapter"),
+                        Arguments = { new IdentifierExpression(Pattern.AnyString)}
+                    }
+                }
+            };
+            return expr;
+        }
+
+        //log.Error("TicketDAL:displayTicket : " + ex.Message);
+        public ExpressionStatement logErr()
+        {
+            var expr = new ExpressionStatement{
+                Expression = new InvocationExpression{
+                    Target = new MemberReferenceExpression{
                         Target = new IdentifierExpression("log"),
                         MemberName = "Error"
                     },
@@ -204,20 +294,16 @@ namespace DALOptimizer
             return expr;
         }
 
-        //catch clause
+        //catch clause to Replace
         public CatchClause ctchclause()
         {
-            var expr = new CatchClause
-            {
+            var expr = new CatchClause{
                 Type = new SimpleType("Exception"),
                 VariableName = "ex",
                 Body = new BlockStatement { 
-                    new ExpressionStatement
-                    {
-                        Expression = new InvocationExpression
-                        {
-                            Target = new MemberReferenceExpression
-                            {
+                    new ExpressionStatement{
+                        Expression = new InvocationExpression{
+                            Target = new MemberReferenceExpression{
                                 Target = new ObjectCreateExpression { 
                                     Type = new SimpleType("LoggerProcessing")
                                 },
@@ -231,13 +317,10 @@ namespace DALOptimizer
             return expr;
         }
 
-
         //finally Block
         public BlockStatement FinalyBlck()
         {
-            var Expr = new BlockStatement
-            {
-
+            var Expr = new BlockStatement{
             };
             return Expr;
         }
@@ -247,33 +330,26 @@ namespace DALOptimizer
         {
             var Expr = new FieldDeclaration{
                 ReturnType = new SimpleType("DatabaseProcessing"),
-                Variables = {new VariableInitializer(
-                    "db",  new ObjectCreateExpression
-                        (type : new SimpleType("DatabaseProcessing")) )
+                Variables = {
+                    new VariableInitializer("db", new ObjectCreateExpression(type : new SimpleType("DatabaseProcessing")) )
                 } 
             };
             return Expr;
         }
 
-        public MethodDeclaration MthdDecl()
+        public VariableDeclarationStatement SqlDtAdptStmt()
         {
-            var expr = new MethodDeclaration
+            var expr = new VariableDeclarationStatement
             {
-                Modifiers = Modifiers.Any,
-                ReturnType = new PrimitiveType(Pattern.AnyString),
-                Name = Pattern.AnyString,
-                Parameters = {
-                    new ParameterDeclaration
-                    {
-                        Type = new MemberType
-                        {
-                            Target = new SimpleType(Pattern.AnyString),
-                            MemberName = Pattern.AnyString
-                        },
-                        Name = Pattern.AnyString
-                    },
-                },
-                Body = new AnyNode("BlockStatement")
+                Type = new SimpleType("SqlDataAdapter"),
+                Variables = { new VariableInitializer(
+                    Pattern.AnyString, 
+                    new ObjectCreateExpression{
+                        Type = new SimpleType("SqlDataAdapter"),
+                        Arguments = {new IdentifierExpression(Pattern.AnyString)}
+                    }
+                    )
+                }
             };
             return expr;
         }
@@ -284,20 +360,17 @@ namespace DALOptimizer
             var pattern = new VariableDeclarationStatement
             {
                 Type = new AnyNode("type"),
-                Variables = {
-                            new VariableInitializer {
-                                Name = Pattern.AnyString,
-                                Initializer = new ObjectCreateExpression {
-                                    Type = new Backreference("type"),
-                                    Arguments = { new Repeat(new AnyNode()) }
-                                }
+                Variables = { 
+                    new VariableInitializer {
+                            Name = Pattern.AnyString,
+                            Initializer = new ObjectCreateExpression {
+                                Type = new Backreference("type"),
+                                Arguments = { new Repeat(new AnyNode()) }
                             }
+                        }
                     }
-
                };
             return pattern;
         }
-
     }
 }
-
