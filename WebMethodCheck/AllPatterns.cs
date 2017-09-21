@@ -89,16 +89,31 @@ namespace WebMethodCheck
             return expr;
         }
 
+        public FieldDeclaration PageNameGlobalFieldDecl(string className)
+        {
+            var expr = new FieldDeclaration{
+                  ReturnType =  new PrimitiveType("string"),
+                  Variables = {
+                      new VariableInitializer(
+                          "pageName",
+                          new PrimitiveExpression(className))
+                  }
+            };
+            return expr;
+        }
+
         public ExpressionStatement AccessControlExpression()
         {
             var Expr = new ExpressionStatement
             {
                 Expression = new InvocationExpression
                 {
-                    Target = new MemberReferenceExpression {
+                    Target = new MemberReferenceExpression
+                    {
                         Target = new IdentifierExpression("accessControl"),
                         MemberName = "Check"
-                    }
+                    },
+                    Arguments = { new IdentifierExpression("pageName") }
                 }
             };
             return Expr;
@@ -109,8 +124,8 @@ namespace WebMethodCheck
         {
             var expr = new MethodDeclaration
             {
-                Modifiers = Modifiers.Private,
-
+                Modifiers = Modifiers.Public,
+                //ModifierTokens = Static,
                 ReturnType = new PrimitiveType("bool"),
                 Name = str,
                 Body = new BlockStatement{

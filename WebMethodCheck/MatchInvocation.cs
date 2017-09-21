@@ -35,6 +35,7 @@ namespace WebMethodCheck
                             break;
                         case 2: FindValidationMethod(invocation, file);
                                 FindIfElseInWebMethod(invocation, file);
+                                FindClassOfWebMethods(invocation, file);
                                 break;
                     }
                 }
@@ -88,6 +89,23 @@ namespace WebMethodCheck
                 if(strToCheck.Contains(invocation.GetParent<MethodDeclaration>().Name))  {
                     file.IndexOfIfElStmt.Add((IfElseStatement)invocation);
                 }
+            }
+        }
+        public void FindClassOfWebMethods(AstNode invocation, CSharpFile file)
+        {
+            if (invocation.GetType().Name == "TypeDeclaration" )
+            {
+                bool WebMethodPresent = false;
+                foreach (var inv in invocation.Descendants.OfType<MethodDeclaration>())
+                {
+                    if (inv.FirstChild.GetText().Contains("WebMethod"))
+                    {
+                        WebMethodPresent = true;
+                        break;
+                    }
+                }
+                if (WebMethodPresent)
+                    file.IndexOfClassDecl.Add((TypeDeclaration)invocation);
             }
         }
     }

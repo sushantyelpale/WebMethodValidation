@@ -37,6 +37,7 @@ namespace WebMethodCheck
                                 break;
                         case 2: WriteValidationMethodBody(file, script);
                                 InsertIfElseInWebmethodTry(file, script);
+                                AddPageNameGlobalinClass(file, script);
                                 break;
                     }
                 }
@@ -100,17 +101,16 @@ namespace WebMethodCheck
         public void WriteAccessControlStmtInTryCatch(CSharpFile file, DocumentScript script)
         {
             AllPatterns allPatterns = new AllPatterns();
-            //;
             foreach (var expr in file.IndexOfTryCatchStmt)
             {
-                bool found = false;
+                bool foundCheckAccessControl = false;
                 var copy = (TryCatchStatement)expr.Clone();
                 foreach (var expression in expr.FirstChild.NextSibling.Children.OfType<ExpressionStatement>())
                 {
                     if (expression.Match(allPatterns.AccessControlExpression()).Success)
-                        found = true;
+                        foundCheckAccessControl = true;
                 }
-                if (found == false)
+                if (foundCheckAccessControl == false)
                     script.InsertBefore(expr.FirstChild.NextSibling.FirstChild.NextSibling, allPatterns.AccessControlExpression());
             }
         }
@@ -156,12 +156,32 @@ namespace WebMethodCheck
                 str.Replace("string", "");
                 str.Replace("String", "");
                 str.Replace("  ", "");
-                int parameterOffser = script.GetCurrentOffset(expr.GetChildByRole(Roles.RPar).StartLocation) - 1;
-                script.InsertText(parameterOffser, str.ToString());
+                int parameterOffset = script.GetCurrentOffset(expr.GetChildByRole(Roles.RPar).StartLocation) - 1;
+                script.InsertText(parameterOffset, str.ToString());
 
                 string retString = expr.GetParent<MethodDeclaration>().Body.LastChild.PrevSibling.FirstChild.NextSibling.GetText();
                 int retValueOffset = script.GetCurrentOffset(expr.LastChild.LastChild.StartLocation);
                 script.InsertText(retValueOffset, " "+ retString);
+            }
+        }
+
+        public void AddPageNameGlobalinClass(CSharpFile file, DocumentScript script)
+        {
+            AllPatterns allPatterns = new AllPatterns();
+            foreach (var expr in file.IndexOfClassDecl)
+            {
+                bool foundPageNameGlobalinClass = false;
+                var copy = (TypeDeclaration)expr.Clone();
+                foreach (var TypeMember in expr.Members.OfType<FieldDeclaration>())
+                {
+                    if (TypeMember.Match(allPatterns.PageNameGlobalFieldDecl(expr.Name + ".aspx")).Success)
+                    {
+                        foundPageNameGlobalinClass = true;
+                        break;
+                    } 
+                }
+                if(!foundPageNameGlobalinClass)
+                    script.InsertBefore(expr.Members.First(), allPatterns.PageNameGlobalFieldDecl(expr.Name + ".aspx"));
             }
         }
     }
