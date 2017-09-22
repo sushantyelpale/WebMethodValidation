@@ -22,15 +22,17 @@ namespace WebMethodCheck
         {
             foreach (var file in solution.AllFiles)
             {
-                if (!Path.GetFileName(file.fileName).EndsWith("AddCustomer.aspx.cs"))
-                    continue;
-
+                //if (!Path.GetFileName(file.fileName).EndsWith("AddCustomer.aspx.cs"))
+                //    continue;
+                //if (!Path.GetFileName(file.fileName).EndsWith("DishApp.asmx.cs"))
+                //    continue;
                 var astResolver = new CSharpAstResolver(file.project.Compilation, file.syntaxTree, file.unresolvedTypeSystemForFile);
                 foreach (var invocation in file.syntaxTree.Descendants.OfType<AstNode>())
                 {
                     switch (count)
                     {
-                        case 1: FindWebMethod(invocation, file);
+                        case 1: FindUsingAPIDecl(invocation, file);
+                                FindWebMethod(invocation, file);
                                 FindTryCatchInWebMethod(invocation, file);    
                             break;
                         case 2: FindValidationMethod(invocation, file);
@@ -40,6 +42,12 @@ namespace WebMethodCheck
                     }
                 }
             }
+        }
+        public void FindUsingAPIDecl(AstNode invocation, CSharpFile file)
+        {
+            if (invocation.GetType().Name == "UsingDeclaration")
+                file.IndexOfUsingDecl.Add((UsingDeclaration)invocation);
+            
         }
         public void FindWebMethod(AstNode invocation, CSharpFile file)
         {
@@ -67,15 +75,6 @@ namespace WebMethodCheck
                     }
                 }
             }
-
-            /*            if (invocation.GetType().Name == "IfElseStatement")
-                        {
-                            if (invocation.GetChildByRole(Roles.Condition).GetText().Contains("valid" + invocation.GetParent<MethodDeclaration>().Name))
-                            {
-                                file.IndexOfIfElStmt.Add((IfElseStatement)invocation);
-                            }
-                        }
-             */
         }
         public void FindIfElseInWebMethod(AstNode invocation, CSharpFile file) 
         { 

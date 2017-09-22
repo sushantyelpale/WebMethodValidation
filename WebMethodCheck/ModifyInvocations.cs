@@ -15,6 +15,8 @@ namespace WebMethodCheck
 {
     class ModifyInvocations
     {
+        AllPatterns allPatterns = new AllPatterns();
+
         public void initializeExpr(Solution solution, int choice)
         {
             foreach (var file in solution.AllFiles)
@@ -31,7 +33,8 @@ namespace WebMethodCheck
                 {
                     switch (choice)
                     {
-                        case 1: WriteValidationMethodStructure(file, script);
+                        case 1: AddUsingAPIDecl(file, script);
+                                WriteValidationMethodStructure(file, script);
                                 WriteIfElseStructureInWebmethodTry(file, script);
                                 WriteAccessControlStmtInTryCatch(file, script);
                                 break;
@@ -41,11 +44,39 @@ namespace WebMethodCheck
                                 break;
                     }
                 }
-                File.WriteAllText(Path.ChangeExtension(file.fileName, ".output.cs"), document.Text);
-                //File.WriteAllText(Path.ChangeExtension(file.fileName, ".cs"), document.Text);
+                //File.WriteAllText(Path.ChangeExtension(file.fileName, ".output.cs"), document.Text);
+                File.WriteAllText(Path.ChangeExtension(file.fileName, ".cs"), document.Text);
             }
         }
 
+        //Add Using ORP; Decl in file
+        public void AddUsingAPIDecl(CSharpFile file, DocumentScript script)
+        {
+            var firstUsingExpr = file.IndexOfUsingDecl.First();
+            var copy = (UsingDeclaration)firstUsingExpr.Clone();
+            var namespaceDec = firstUsingExpr.Parent.Children.OfType<NamespaceDeclaration>();
+            bool foundWebMethod = false;
+            bool founORPDecl = false;
+            foreach(var method in namespaceDec.First().Descendants.OfType<MethodDeclaration>())
+            {
+                if (method.FirstChild.GetText().Contains("WebMethod"))
+                {
+                    foundWebMethod = true;
+                    break;
+                }
+            }
+            foreach(var otherUsingExpr in firstUsingExpr.Parent.Children.OfType<UsingDeclaration>()) 
+            {
+                if (otherUsingExpr.Match(allPatterns.ORPUsingDecl()).Success)
+                {
+                    founORPDecl = true;
+                    break;
+                }
+            }
+            if (!(Path.GetDirectoryName(file.fileName).EndsWith("ORP")) && foundWebMethod && !founORPDecl)
+                script.InsertBefore(file.IndexOfUsingDecl.Last().NextSibling, allPatterns.ORPUsingDecl());
+        }
+        // Writing validation Methhod strucutre for webmethod 
         public void WriteValidationMethodStructure(CSharpFile file, DocumentScript script)
         {
             foreach (var expr in file.IndexOfWebMthdDecl)
@@ -55,36 +86,34 @@ namespace WebMethodCheck
                 var chldOfTypPar = expr.GetChildByRole(Roles.Parameter);
                 var mtdhName = expr.Name;
                 var chdMtdhName = "Valid" + mtdhName;
-                AllPatterns allPatterns = new AllPatterns();
+                
                 var expr1 = allPatterns.ValidationMthd(chdMtdhName);
                 bool validMethodPresent = false;
 
                 if (chldOfTypPar != null)
                 {
-                    //string input = Regex.Replace(chldOfTypPar.GetText(), @"\w+\.\b", "");
                     if (expr.PrevSibling!=null && expr.PrevSibling.GetType().Name == "MethodDeclaration")
                     {
-                        if (expr.PrevSibling.GetText().Contains(expr.Name))
+                        if (expr.PrevSibling.GetText().Contains(chdMtdhName))
                             validMethodPresent = true;
                     }
-                    if(validMethodPresent == false)
+                    if(!validMethodPresent)
                         script.InsertBefore(expr, expr1);
                 }
             }
         }
 
+        // Adding call to validation method inside try catch statement
         public void WriteIfElseStructureInWebmethodTry(CSharpFile file, DocumentScript script)
         {
             foreach (var expr in file.IndexOfTryCatchStmt)
             {
-                AllPatterns allPatterns = new AllPatterns();
                 var copy = (TryCatchStatement)expr.Clone();
                 var parentMethod = expr.GetParent<MethodDeclaration>();
                 var methodName = "Valid" + parentMethod.Name;
                 var chldOfTypPar = parentMethod.GetChildByRole(Roles.Parameter);
                 if (chldOfTypPar != null)
                 {
-
                     bool foundIfElseDecl = false;
                     var trySecondChild = expr.FirstChild.NextSibling.FirstChild.NextSibling;
                     foreach (var expression in trySecondChild.Parent.Children.OfType<IfElseStatement>())
@@ -92,15 +121,15 @@ namespace WebMethodCheck
                         if (expression.GetText().Contains(methodName))
                             foundIfElseDecl = true;
                     }
-                    if (foundIfElseDecl == false)
+                    if (!foundIfElseDecl)
                         script.InsertBefore(trySecondChild, allPatterns.IfElseTryCall(methodName));
                 }
             }
         }
 
+        // To write access control statement in try block of webmethod
         public void WriteAccessControlStmtInTryCatch(CSharpFile file, DocumentScript script)
         {
-            AllPatterns allPatterns = new AllPatterns();
             foreach (var expr in file.IndexOfTryCatchStmt)
             {
                 bool foundCheckAccessControl = false;
@@ -110,35 +139,41 @@ namespace WebMethodCheck
                     if (expression.Match(allPatterns.AccessControlExpression()).Success)
                         foundCheckAccessControl = true;
                 }
-                if (foundCheckAccessControl == false)
+                if (!foundCheckAccessControl)
                     script.InsertBefore(expr.FirstChild.NextSibling.FirstChild.NextSibling, allPatterns.AccessControlExpression());
             }
         }
+
 
         public void WriteValidationMethodBody(CSharpFile file, DocumentScript script)
         {
             foreach (var expr in file.IndexOfWebMthdDecl)
             {
+                // if parameters are present, go to next iteration without doing anything.
+                if (expr.Parameters.Count != 0)
+                    continue;
+
                 // logic to insert parameters to validation Method.
                 var copy = (MethodDeclaration)expr.Clone();
-                string str = expr.NextSibling.GetText().Split("()".ToCharArray())[1];
+                string str =  string.Join(", ", from parameter 
+                                                 in expr.NextSibling.Descendants.OfType<ParameterDeclaration>() 
+                                                 select parameter.GetText());
                 var chldOfTypPar = expr.GetChildByRole(Roles.RPar);
                 int offset = script.GetCurrentOffset(chldOfTypPar.StartLocation);
                 script.InsertText(offset, str);
 
+                // Insert Static keyword to validation method.
+                script.InsertText(script.GetCurrentOffset(expr.ReturnType.StartLocation), "static ");
+
                 // logic to insert if else statements inside validation Method body
-                AllPatterns AP = new AllPatterns();
                 int offset1 = script.GetCurrentOffset(expr.LastChild.FirstChild.EndLocation);
-                foreach (var inv in expr.NextSibling.Descendants.OfType<ParameterDeclaration>())
+                foreach (var inv in expr.NextSibling.Children.OfType<ParameterDeclaration>())
                 {
+                    var locationToInsert = expr.LastChild.LastChild.PrevSibling;
                     if (inv.FirstChild.GetText().Contains("int"))
-                    {
-                        script.InsertBefore(expr.LastChild.LastChild.PrevSibling, AP.IfElStmtInt(inv.LastChild.GetText()));
-                    }
+                        script.InsertBefore(locationToInsert, allPatterns.IfElStmtInt(inv.LastChild.GetText()));
                     else if (inv.FirstChild.GetText().Contains("string"))
-                    {
-                        script.InsertBefore(expr.LastChild.LastChild.PrevSibling, AP.IfElStmtStr(inv.LastChild.GetText()));
-                    }
+                        script.InsertBefore(locationToInsert, allPatterns.IfElStmtStr(inv.LastChild.GetText()));
                 }
             }
         }
@@ -147,42 +182,46 @@ namespace WebMethodCheck
         {
             foreach (var expr in file.IndexOfIfElStmt)
             {
+                //check if parameters are passed before, go to next iteration 
+                if (!(expr.Descendants.OfType<InvocationExpression>().First().GetText().Split("()".ToCharArray())[1] == ""))
+                    continue;
+
                 // logic to add parameters in if block (in try catch of webmethod) to Validation Method.
                 var copy = (IfElseStatement)expr.Clone();
                 var ParentExpr = expr.GetParent<MethodDeclaration>();
-                StringBuilder str = new StringBuilder();
-                str.Append(ParentExpr.GetText().Split("()".ToCharArray())[1]);
-                str.Replace("int", "");
-                str.Replace("string", "");
-                str.Replace("String", "");
-                str.Replace("  ", "");
+                string str = string.Join(", ", from parameter
+                                               in ParentExpr.Descendants.OfType<ParameterDeclaration>()
+                                               select parameter.Name);
+               
                 int parameterOffset = script.GetCurrentOffset(expr.GetChildByRole(Roles.RPar).StartLocation) - 1;
-                script.InsertText(parameterOffset, str.ToString());
-
-                string retString = expr.GetParent<MethodDeclaration>().Body.LastChild.PrevSibling.FirstChild.NextSibling.GetText();
-                int retValueOffset = script.GetCurrentOffset(expr.LastChild.LastChild.StartLocation);
-                script.InsertText(retValueOffset, " "+ retString);
+                script.InsertText(parameterOffset, str);
+                if(expr.GetParent<MethodDeclaration>().ReturnType.GetText()!= "void")
+                {
+                    string retString = expr.GetParent<MethodDeclaration>().Body.LastChild.PrevSibling.FirstChild.NextSibling.GetText();
+                    int retValueOffset = script.GetCurrentOffset(expr.LastChild.LastChild.StartLocation);
+                    script.InsertText(retValueOffset, " "+ retString);
+                }
             }
         }
-
+        // Add pageName parameter in clas global declaration
         public void AddPageNameGlobalinClass(CSharpFile file, DocumentScript script)
         {
-            AllPatterns allPatterns = new AllPatterns();
             foreach (var expr in file.IndexOfClassDecl)
             {
-                bool foundPageNameGlobalinClass = false;
+                bool foundPageNameGlobalInClass = false;
                 var copy = (TypeDeclaration)expr.Clone();
                 foreach (var TypeMember in expr.Members.OfType<FieldDeclaration>())
                 {
                     if (TypeMember.Match(allPatterns.PageNameGlobalFieldDecl(expr.Name + ".aspx")).Success)
                     {
-                        foundPageNameGlobalinClass = true;
+                        foundPageNameGlobalInClass = true;
                         break;
                     } 
                 }
-                if(!foundPageNameGlobalinClass)
+                if(!foundPageNameGlobalInClass)
                     script.InsertBefore(expr.Members.First(), allPatterns.PageNameGlobalFieldDecl(expr.Name + ".aspx"));
             }
         }
+
     }
 }

@@ -47,5 +47,6 @@ namespace WebMethodCheck
         public List<IfElseStatement> IndexOfIfElStmt = new List<IfElseStatement>();
         public List<TryCatchStatement> IndexOfTryCatchStmt = new List<TryCatchStatement>();
         public List<TypeDeclaration> IndexOfClassDecl = new List<TypeDeclaration>();
+        public List<UsingDeclaration> IndexOfUsingDecl = new List<UsingDeclaration>();
     }
 }

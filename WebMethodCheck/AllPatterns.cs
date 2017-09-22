@@ -44,7 +44,7 @@ namespace WebMethodCheck
                         Target = new MemberReferenceExpression
                         {
                             Target = new TypeReferenceExpression(new PrimitiveType("string")),
-                            MemberName = "isEmptyOrNull"
+                            MemberName = "IsNullOrEmpty"
                         },
                         Arguments = { new IdentifierExpression(varName) }
                     },
@@ -92,7 +92,8 @@ namespace WebMethodCheck
         public FieldDeclaration PageNameGlobalFieldDecl(string className)
         {
             var expr = new FieldDeclaration{
-                  ReturnType =  new PrimitiveType("string"),
+                Modifiers = Modifiers.Static, 
+                ReturnType =  new PrimitiveType("string"),
                   Variables = {
                       new VariableInitializer(
                           "pageName",
@@ -110,7 +111,7 @@ namespace WebMethodCheck
                 {
                     Target = new MemberReferenceExpression
                     {
-                        Target = new IdentifierExpression("accessControl"),
+                        Target = new IdentifierExpression("AccessControl"),
                         MemberName = "Check"
                     },
                     Arguments = { new IdentifierExpression("pageName") }
@@ -119,12 +120,23 @@ namespace WebMethodCheck
             return Expr;
         }
 
+        // Using ORP Decl
+        public UsingDeclaration ORPUsingDecl()
+        {
+            var expr = new UsingDeclaration
+            {
+                Import = new SimpleType("ORP")
+            };
+            return expr;
+        }
+
         // web method to add
         public MethodDeclaration ValidationMthd(string str)
         {
             var expr = new MethodDeclaration
             {
                 Modifiers = Modifiers.Public,
+                //ModifierTokens = ,
                 //ModifierTokens = Static,
                 ReturnType = new PrimitiveType("bool"),
                 Name = str,
