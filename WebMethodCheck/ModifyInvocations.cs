@@ -21,7 +21,8 @@ namespace WebMethodCheck
         {
             foreach (var file in solution.AllFiles)
             {
-                if (file.IndexOfWebMthdDecl.Count == 0 && file.IndexOfWebMthdDecl.Count == 0 && file.IndexOfIfElStmt.Count == 0)
+                if (file.IndexOfWebMthdDecl.Count == 0 &&    file.IndexOfIfElStmt.Count == 0 &&     file.IndexOfTryCatchStmt.Count == 0 &&  file.IndexOfClassDecl.Count == 0 &&
+                    file.IndexOfUsingDecl.Count == 0)
                     continue;
                 file.syntaxTree.Freeze();
 
@@ -73,8 +74,11 @@ namespace WebMethodCheck
                     break;
                 }
             }
-            if (!(Path.GetDirectoryName(file.fileName).EndsWith("ORP")) && foundWebMethod && !founORPDecl)
+            if (foundWebMethod && !founORPDecl)
                 script.InsertBefore(file.IndexOfUsingDecl.Last().NextSibling, allPatterns.ORPUsingDecl());
+//            if (!(Path.GetDirectoryName(file.fileName).EndsWith("ORP")) && foundWebMethod && !founORPDecl)
+//                script.InsertBefore(file.IndexOfUsingDecl.Last().NextSibling, allPatterns.ORPUsingDecl());
+
         }
         // Writing validation Methhod strucutre for webmethod 
         public void WriteValidationMethodStructure(CSharpFile file, DocumentScript script)
@@ -153,6 +157,9 @@ namespace WebMethodCheck
                 if (expr.Parameters.Count != 0)
                     continue;
 
+                if (expr.Name != "Valid" + (expr.NextSibling.GetChildByRole(Roles.Identifier).GetText()))
+                    continue;
+
                 // logic to insert parameters to validation Method.
                 var copy = (MethodDeclaration)expr.Clone();
                 string str =  string.Join(", ", from parameter 
@@ -197,9 +204,15 @@ namespace WebMethodCheck
                 script.InsertText(parameterOffset, str);
                 if(expr.GetParent<MethodDeclaration>().ReturnType.GetText()!= "void")
                 {
-                    string retString = expr.GetParent<MethodDeclaration>().Body.LastChild.PrevSibling.FirstChild.NextSibling.GetText();
+                    var returnStmt = expr.GetParent<MethodDeclaration>().Body.LastChild.PrevSibling.FirstChild;
                     int retValueOffset = script.GetCurrentOffset(expr.LastChild.LastChild.StartLocation);
-                    script.InsertText(retValueOffset, " "+ retString);
+                    if (returnStmt.GetText() == "return")
+                    {
+                        string retString = returnStmt.NextSibling.GetText();
+                        script.InsertText(retValueOffset, " " + retString);
+                    }
+                    else
+                        script.InsertText(retValueOffset, " DummyText");
                 }
             }
         }

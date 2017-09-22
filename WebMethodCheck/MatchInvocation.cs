@@ -22,10 +22,10 @@ namespace WebMethodCheck
         {
             foreach (var file in solution.AllFiles)
             {
-                //if (!Path.GetFileName(file.fileName).EndsWith("AddCustomer.aspx.cs"))
+                //if (Path.GetFileName(file.fileName).EndsWith("MemberBalance.aspx.cs"))
                 //    continue;
-                //if (!Path.GetFileName(file.fileName).EndsWith("DishApp.asmx.cs"))
-                //    continue;
+                if (Path.GetFileName(file.fileName).EndsWith("AssemblyInfo.cs"))
+                    continue;
                 var astResolver = new CSharpAstResolver(file.project.Compilation, file.syntaxTree, file.unresolvedTypeSystemForFile);
                 foreach (var invocation in file.syntaxTree.Descendants.OfType<AstNode>())
                 {
@@ -38,7 +38,7 @@ namespace WebMethodCheck
                         case 2: FindValidationMethod(invocation, file);
                                 FindIfElseInWebMethod(invocation, file);
                                 FindClassOfWebMethods(invocation, file);
-                                break;
+                            break;
                     }
                 }
             }
@@ -65,14 +65,12 @@ namespace WebMethodCheck
         {
             if (invocation.NextSibling != null)
             {
+                var next = invocation.NextSibling;
                 if (invocation.GetType().Name == "MethodDeclaration" &&
-                    invocation.NextSibling.GetType().Name == "MethodDeclaration")
+                    next.GetType().Name == "MethodDeclaration")
                 {
-                    var next = invocation.NextSibling;
-                    if (next.GetText().Contains("WebMethod"))
-                    {
+                    if (next.GetText().Contains("WebMethod") )
                         file.IndexOfWebMthdDecl.Add((MethodDeclaration)invocation);
-                    }
                 }
             }
         }
