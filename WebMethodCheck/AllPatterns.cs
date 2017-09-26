@@ -32,6 +32,23 @@ namespace WebMethodCheck
             return ifElStmt;
         }
 
+        public IfElseStatement IfElseFloatDecimal(string varName)
+        {
+            var ifElseFloat = new IfElseStatement {
+                Condition = new BinaryOperatorExpression
+                {
+                    Operator = BinaryOperatorType.LessThanOrEqual,
+                    Left = new IdentifierExpression(varName),
+                    Right = new PrimitiveExpression(0.0)
+                },
+                TrueStatement = new ReturnStatement
+                {
+                    Expression = new PrimitiveExpression(false)
+                }
+            };
+            return ifElseFloat;
+        }
+
         public IfElseStatement IfElStmtStr(string varName)
         {
             var ifElStmt = new IfElseStatement

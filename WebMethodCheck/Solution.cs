@@ -14,7 +14,7 @@ namespace WebMethodCheck
     /// <summary>
     /// Represents a Visual Studio solution (.sln file).
     /// </summary>
-    public class Solution : IDisposable
+    public class Solution
     {
         public string directory;
         public List<CSharpProject> projects = new List<CSharpProject>();
@@ -84,20 +84,5 @@ namespace WebMethodCheck
             return assemblyDict.GetOrAdd(assemblyFileName, file => new CecilLoader().LoadAssemblyFile(file));
         }
 
-        public void Dispose()
-        {
-
-            if (this.directory != null)
-            {
-                this.directory = null;
-            }
-            if (this.projects != null)
-            {
-                this.projects.Clear();
-            }
-                    
-           // projects = null;
-//            throw new NotImplementedException();
-        }
     }
 }

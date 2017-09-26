@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using ICSharpCode.NRefactory.CSharp;
@@ -7,7 +8,7 @@ using ICSharpCode.NRefactory.CSharp.TypeSystem;
 
 namespace WebMethodCheck
 {
-    public class CSharpFile
+    public class CSharpFile 
     {
         public readonly CSharpProject project;
         public readonly string fileName;
@@ -48,5 +49,6 @@ namespace WebMethodCheck
         public List<TryCatchStatement> IndexOfTryCatchStmt = new List<TryCatchStatement>();
         public List<TypeDeclaration> IndexOfClassDecl = new List<TypeDeclaration>();
         public List<UsingDeclaration> IndexOfUsingDecl = new List<UsingDeclaration>();
+
     }
 }

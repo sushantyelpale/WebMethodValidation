@@ -22,10 +22,10 @@ namespace WebMethodCheck
         {
             foreach (var file in solution.AllFiles)
             {
-                //if (Path.GetFileName(file.fileName).EndsWith("MemberBalance.aspx.cs"))
-                //    continue;
                 if (Path.GetFileName(file.fileName).EndsWith("AssemblyInfo.cs"))
                     continue;
+                //if (!Path.GetFileName(file.fileName).EndsWith("ElectricityBill.aspx.cs"))
+                //    continue;
                 var astResolver = new CSharpAstResolver(file.project.Compilation, file.syntaxTree, file.unresolvedTypeSystemForFile);
                 foreach (var invocation in file.syntaxTree.Descendants.OfType<AstNode>())
                 {

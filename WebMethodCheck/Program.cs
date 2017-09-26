@@ -52,6 +52,7 @@ namespace WebMethodCheck
             matchInvocation.FindInvocationTypeMethod(solution, choice);
             printFunction.PrintMethod(solution);
             matchExpr.initializeExpr(solution, choice);
+            Console.ReadKey();
         }
     }
 }

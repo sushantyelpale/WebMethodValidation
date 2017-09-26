@@ -21,9 +21,26 @@ namespace WebMethodCheck
         {
             foreach (var file in solution.AllFiles)
             {
-                if (file.IndexOfWebMthdDecl.Count == 0 &&    file.IndexOfIfElStmt.Count == 0 &&     file.IndexOfTryCatchStmt.Count == 0 &&  file.IndexOfClassDecl.Count == 0 &&
+                /*foreach (CSharpFile list in file)
+                {
+                    if (list..Count == null)
+                    {
+                        Console.WriteLine("in For");
+                        break;
+                    }
+                }
+                  */  
+                
+                if (file.IndexOfWebMthdDecl.Count == 0 &&    
+                    file.IndexOfIfElStmt.Count == 0 &&     
+                    file.IndexOfTryCatchStmt.Count == 0 &&  
+                    file.IndexOfClassDecl.Count == 0 &&
                     file.IndexOfUsingDecl.Count == 0)
+                {
+                    //Console.WriteLine("If succeded");
                     continue;
+                }
+                
                 file.syntaxTree.Freeze();
 
                 // Create a document containing the file content:
@@ -42,6 +59,7 @@ namespace WebMethodCheck
                         case 2: WriteValidationMethodBody(file, script);
                                 InsertIfElseInWebmethodTry(file, script);
                                 AddPageNameGlobalinClass(file, script);
+                                CheckTryCatchInWebMethodBody(file, script);
                                 break;
                     }
                 }
@@ -83,7 +101,7 @@ namespace WebMethodCheck
         // Writing validation Methhod strucutre for webmethod 
         public void WriteValidationMethodStructure(CSharpFile file, DocumentScript script)
         {
-            foreach (var expr in file.IndexOfWebMthdDecl)
+            foreach (MethodDeclaration expr in file.IndexOfWebMthdDecl)
             {
                 // for adding method before the webmethod
                 var copy = (MethodDeclaration)expr.Clone();
@@ -91,7 +109,7 @@ namespace WebMethodCheck
                 var mtdhName = expr.Name;
                 var chdMtdhName = "Valid" + mtdhName;
                 
-                var expr1 = allPatterns.ValidationMthd(chdMtdhName);
+                var validationMthd = allPatterns.ValidationMthd(chdMtdhName);
                 bool validMethodPresent = false;
 
                 if (chldOfTypPar != null)
@@ -102,8 +120,10 @@ namespace WebMethodCheck
                             validMethodPresent = true;
                     }
                     if(!validMethodPresent)
-                        script.InsertBefore(expr, expr1);
+                        script.InsertBefore(expr, validationMthd);
                 }
+
+               
             }
         }
 
@@ -177,10 +197,16 @@ namespace WebMethodCheck
                 foreach (var inv in expr.NextSibling.Children.OfType<ParameterDeclaration>())
                 {
                     var locationToInsert = expr.LastChild.LastChild.PrevSibling;
-                    if (inv.FirstChild.GetText().Contains("int"))
-                        script.InsertBefore(locationToInsert, allPatterns.IfElStmtInt(inv.LastChild.GetText()));
-                    else if (inv.FirstChild.GetText().Contains("string"))
-                        script.InsertBefore(locationToInsert, allPatterns.IfElStmtStr(inv.LastChild.GetText()));
+                    string dataType = inv.FirstChild.GetText();
+                    string varName = inv.LastChild.GetText();
+                    if (dataType.Contains("int"))
+                        script.InsertBefore(locationToInsert, allPatterns.IfElStmtInt(varName));
+                    else if (dataType.Contains("string") || dataType.Contains("String"))
+                        script.InsertBefore(locationToInsert, allPatterns.IfElStmtStr(varName));
+                    else if (dataType.Contains("float") || dataType.Contains("decimal"))
+                        script.InsertBefore(locationToInsert, allPatterns.IfElseFloatDecimal(varName));
+                    else
+                        script.InsertText(script.GetCurrentOffset(locationToInsert.StartLocation),"DummyText_DatatypeIsDifferent ");
                 }
             }
         }
@@ -236,5 +262,16 @@ namespace WebMethodCheck
             }
         }
 
+        // Checking Whether Try Catch is Present in WebMethod
+        public void CheckTryCatchInWebMethodBody(CSharpFile file, DocumentScript script)
+        {
+            foreach (MethodDeclaration expr in file.IndexOfWebMthdDecl)
+            {
+                var copy = (MethodDeclaration)expr.NextSibling.Clone();
+                if (expr.NextSibling.FirstChild.GetText().Contains("WebMethod") && 
+                    !expr.NextSibling.Descendants.OfType<TryCatchStatement>().Any())
+                    script.InsertText(script.GetCurrentOffset(expr.NextSibling.StartLocation), "DUmmyText_TryCatchNotPresent");
+            }
+        }
     }
 }
