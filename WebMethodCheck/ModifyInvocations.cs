@@ -19,17 +19,17 @@ namespace WebMethodCheck
 
         public void initializeExpr(Solution solution, int choice)
         {
+            string CheckAccessMethodName = "";
+            if (choice == 1)
+            {
+                do
+                {
+                    Console.WriteLine("Please Enter the CheckAccess Method Name: ");
+                    CheckAccessMethodName = Console.ReadLine();
+                } while (CheckAccessMethodName == null);
+            }
             foreach (var file in solution.AllFiles)
             {
-                /*foreach (CSharpFile list in file)
-                {
-                    if (list..Count == null)
-                    {
-                        Console.WriteLine("in For");
-                        break;
-                    }
-                }
-                  */  
                 
                 if (file.IndexOfWebMthdDecl.Count == 0 &&    
                     file.IndexOfIfElStmt.Count == 0 &&     
@@ -37,7 +37,6 @@ namespace WebMethodCheck
                     file.IndexOfClassDecl.Count == 0 &&
                     file.IndexOfUsingDecl.Count == 0)
                 {
-                    //Console.WriteLine("If succeded");
                     continue;
                 }
                 
@@ -47,14 +46,15 @@ namespace WebMethodCheck
                 var document = new StringBuilderDocument(file.originalText);
                 var formattingOptions = FormattingOptionsFactory.CreateAllman();
                 var options = new TextEditorOptions();
+                
                 using (var script = new DocumentScript(document, formattingOptions, options))
                 {
                     switch (choice)
                     {
-                        case 1: AddUsingAPIDecl(file, script);
+                        case 1: //AddUsingAPIDecl(file, script);
                                 WriteValidationMethodStructure(file, script);
                                 WriteIfElseStructureInWebmethodTry(file, script);
-                                WriteAccessControlStmtInTryCatch(file, script);
+                                WriteAccessControlStmtInTryCatch(file, script, CheckAccessMethodName);
                                 break;
                         case 2: WriteValidationMethodBody(file, script);
                                 InsertIfElseInWebmethodTry(file, script);
@@ -65,7 +65,9 @@ namespace WebMethodCheck
                 }
                 //File.WriteAllText(Path.ChangeExtension(file.fileName, ".output.cs"), document.Text);
                 File.WriteAllText(Path.ChangeExtension(file.fileName, ".cs"), document.Text);
+                
             }
+            Console.WriteLine("Done. Press Any Key to Exit..............");
         }
 
         //Add Using ORP; Decl in file
@@ -73,10 +75,10 @@ namespace WebMethodCheck
         {
             var firstUsingExpr = file.IndexOfUsingDecl.First();
             var copy = (UsingDeclaration)firstUsingExpr.Clone();
-            var namespaceDec = firstUsingExpr.Parent.Children.OfType<NamespaceDeclaration>();
+            var parentDecl = firstUsingExpr.Parent;
             bool foundWebMethod = false;
             bool founORPDecl = false;
-            foreach(var method in namespaceDec.First().Descendants.OfType<MethodDeclaration>())
+            foreach(var method in parentDecl.Descendants.OfType<MethodDeclaration>())
             {
                 if (method.FirstChild.GetText().Contains("WebMethod"))
                 {
@@ -93,7 +95,7 @@ namespace WebMethodCheck
                 }
             }
             if (foundWebMethod && !founORPDecl)
-                script.InsertBefore(file.IndexOfUsingDecl.Last().NextSibling, allPatterns.ORPUsingDecl());
+                script.InsertBefore(file.IndexOfUsingDecl.Last(), allPatterns.ORPUsingDecl());
 //            if (!(Path.GetDirectoryName(file.fileName).EndsWith("ORP")) && foundWebMethod && !founORPDecl)
 //                script.InsertBefore(file.IndexOfUsingDecl.Last().NextSibling, allPatterns.ORPUsingDecl());
 
@@ -122,8 +124,6 @@ namespace WebMethodCheck
                     if(!validMethodPresent)
                         script.InsertBefore(expr, validationMthd);
                 }
-
-               
             }
         }
 
@@ -152,7 +152,7 @@ namespace WebMethodCheck
         }
 
         // To write access control statement in try block of webmethod
-        public void WriteAccessControlStmtInTryCatch(CSharpFile file, DocumentScript script)
+        public void WriteAccessControlStmtInTryCatch(CSharpFile file, DocumentScript script, string checkAccessMethodName)
         {
             foreach (var expr in file.IndexOfTryCatchStmt)
             {
@@ -160,11 +160,11 @@ namespace WebMethodCheck
                 var copy = (TryCatchStatement)expr.Clone();
                 foreach (var expression in expr.FirstChild.NextSibling.Children.OfType<ExpressionStatement>())
                 {
-                    if (expression.Match(allPatterns.AccessControlExpression()).Success)
+                    if (expression.Match(allPatterns.AccessControlExpression(checkAccessMethodName)).Success)
                         foundCheckAccessControl = true;
                 }
                 if (!foundCheckAccessControl)
-                    script.InsertBefore(expr.FirstChild.NextSibling.FirstChild.NextSibling, allPatterns.AccessControlExpression());
+                    script.InsertBefore(expr.FirstChild.NextSibling.FirstChild.NextSibling, allPatterns.AccessControlExpression(checkAccessMethodName));
             }
         }
 
@@ -194,9 +194,11 @@ namespace WebMethodCheck
 
                 // logic to insert if else statements inside validation Method body
                 int offset1 = script.GetCurrentOffset(expr.LastChild.FirstChild.EndLocation);
+                
+                var locationToInsert = expr.LastChild.LastChild.PrevSibling;
+                script.InsertBefore(locationToInsert, allPatterns.ValidationFieldDecl());
                 foreach (var inv in expr.NextSibling.Children.OfType<ParameterDeclaration>())
                 {
-                    var locationToInsert = expr.LastChild.LastChild.PrevSibling;
                     string dataType = inv.FirstChild.GetText();
                     string varName = inv.LastChild.GetText();
                     if (dataType.Contains("int"))
@@ -208,6 +210,7 @@ namespace WebMethodCheck
                     else
                         script.InsertText(script.GetCurrentOffset(locationToInsert.StartLocation),"DummyText_DatatypeIsDifferent ");
                 }
+                
             }
         }
 
@@ -254,8 +257,10 @@ namespace WebMethodCheck
                     if (TypeMember.Match(allPatterns.PageNameGlobalFieldDecl(expr.Name + ".aspx")).Success)
                     {
                         foundPageNameGlobalInClass = true;
-                        break;
-                    } 
+                        //break;
+                    }
+                    if (TypeMember.Match(allPatterns.PageNameGlobalFieldDecl1(expr.Name + ".aspx")).Success)
+                        script.Remove(TypeMember, true);
                 }
                 if(!foundPageNameGlobalInClass)
                     script.InsertBefore(expr.Members.First(), allPatterns.PageNameGlobalFieldDecl(expr.Name + ".aspx"));
@@ -270,7 +275,7 @@ namespace WebMethodCheck
                 var copy = (MethodDeclaration)expr.NextSibling.Clone();
                 if (expr.NextSibling.FirstChild.GetText().Contains("WebMethod") && 
                     !expr.NextSibling.Descendants.OfType<TryCatchStatement>().Any())
-                    script.InsertText(script.GetCurrentOffset(expr.NextSibling.StartLocation), "DUmmyText_TryCatchNotPresent");
+                    script.InsertText(script.GetCurrentOffset(expr.NextSibling.StartLocation), "DummyText_TryCatchNotPresent");
             }
         }
     }

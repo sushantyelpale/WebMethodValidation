@@ -82,7 +82,7 @@ namespace WebMethodCheck
                 try{
                     strToCheck = invocation.FirstChild.NextSibling.NextSibling.FirstChild.NextSibling.FirstChild.GetText();
                 }
-                catch(Exception e) {}
+                catch(Exception) {}
                 if(strToCheck.Contains(invocation.GetParent<MethodDeclaration>().Name))  {
                     file.IndexOfIfElStmt.Add((IfElseStatement)invocation);
                 }

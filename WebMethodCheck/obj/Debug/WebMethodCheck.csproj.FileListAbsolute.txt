@@ -9,3 +9,14 @@ D:\DALProject\ORPWebMtdh\WebMethodCheck\bin\Debug\ICSharpCode.NRefactory.xml
 D:\DALProject\ORPWebMtdh\WebMethodCheck\bin\Debug\ICSharpCode.NRefactory.CSharp.xml
 D:\DALProject\ORPWebMtdh\WebMethodCheck\obj\Debug\WebMethodCheck.exe
 D:\DALProject\ORPWebMtdh\WebMethodCheck\obj\Debug\WebMethodCheck.pdb
+F:\Projects\ORPWebMtdh\WebMethodCheck\bin\Debug\WebMethodCheck.exe.config
+F:\Projects\ORPWebMtdh\WebMethodCheck\obj\Debug\WebMethodCheck.exe
+F:\Projects\ORPWebMtdh\WebMethodCheck\obj\Debug\WebMethodCheck.pdb
+F:\Projects\ORPWebMtdh\WebMethodCheck\bin\Debug\WebMethodCheck.exe
+F:\Projects\ORPWebMtdh\WebMethodCheck\bin\Debug\WebMethodCheck.pdb
+F:\Projects\ORPWebMtdh\WebMethodCheck\bin\Debug\ICSharpCode.NRefactory.CSharp.dll
+F:\Projects\ORPWebMtdh\WebMethodCheck\bin\Debug\ICSharpCode.NRefactory.dll
+F:\Projects\ORPWebMtdh\WebMethodCheck\bin\Debug\Mono.Cecil.dll
+F:\Projects\ORPWebMtdh\WebMethodCheck\bin\Debug\ICSharpCode.NRefactory.xml
+F:\Projects\ORPWebMtdh\WebMethodCheck\bin\Debug\ICSharpCode.NRefactory.CSharp.xml
+F:\Projects\ORPWebMtdh\WebMethodCheck\obj\Debug\WebMethodCheck.csprojResolveAssemblyReference.cache

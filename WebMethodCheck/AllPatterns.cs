@@ -39,11 +39,11 @@ namespace WebMethodCheck
                 {
                     Operator = BinaryOperatorType.LessThanOrEqual,
                     Left = new IdentifierExpression(varName),
-                    Right = new PrimitiveExpression(0.0)
+                    Right = new PrimitiveExpression(0)
                 },
                 TrueStatement = new ReturnStatement
                 {
-                    Expression = new PrimitiveExpression(false)
+                    Expression = new PrimitiveExpression(true)
                 }
             };
             return ifElseFloat;
@@ -53,30 +53,17 @@ namespace WebMethodCheck
         {
             var ifElStmt = new IfElseStatement
             {
-                Condition = new BinaryOperatorExpression
+                Condition = new InvocationExpression
                 {
-                    Operator = BinaryOperatorType.ConditionalOr,
-                    Left = new InvocationExpression
-                    {
-                        Target = new MemberReferenceExpression
-                        {
-                            Target = new TypeReferenceExpression(new PrimitiveType("string")),
-                            MemberName = "IsNullOrEmpty"
-                        },
-                        Arguments = { new IdentifierExpression(varName) }
+                    Target = new MemberReferenceExpression { 
+                        Target = new IdentifierExpression("validation"),
+                        MemberName = "IsValidString"
                     },
-                    Right = new InvocationExpression
-                    {
-                        Target = new MemberReferenceExpression
-                        {
-                            Target = new TypeReferenceExpression(new PrimitiveType("string")),
-                            MemberName = "IsNullOrWhiteSpace"
-                        },
-                        Arguments = { new IdentifierExpression(varName) }
-                    },
+                    Arguments = { new IdentifierExpression(varName) }
                 },
-                TrueStatement = new ReturnStatement {
-                    Expression = new PrimitiveExpression(false)
+                TrueStatement = new ReturnStatement
+                {
+                    Expression = new PrimitiveExpression(true)
                 }
             };
             return ifElStmt;
@@ -120,7 +107,22 @@ namespace WebMethodCheck
             return expr;
         }
 
-        public ExpressionStatement AccessControlExpression()
+        public FieldDeclaration PageNameGlobalFieldDecl1(string className)
+        {
+            var expr = new FieldDeclaration
+            {
+                Modifiers = Modifiers.Static | Modifiers.Public,
+                ReturnType = new PrimitiveType("string"),
+                Variables = {
+                      new VariableInitializer(
+                          "pageName",
+                          new PrimitiveExpression(className))
+                  }
+            };
+            return expr;
+        }
+
+        public ExpressionStatement AccessControlExpression(string MethodName)
         {
             var Expr = new ExpressionStatement
             {
@@ -129,14 +131,14 @@ namespace WebMethodCheck
                     Target = new MemberReferenceExpression
                     {
                         Target = new IdentifierExpression("AccessControl"),
-                        MemberName = "Check"
+                        MemberName = MethodName
                     },
                     Arguments = { new IdentifierExpression("pageName") }
                 }
             };
             return Expr;
         }
-
+        
         // Using ORP Decl
         public UsingDeclaration ORPUsingDecl()
         {
@@ -166,5 +168,18 @@ namespace WebMethodCheck
             return expr;
         }
 
+        // Validation validation = new Validation();
+        public FieldDeclaration ValidationFieldDecl()
+        {
+            var expr = new FieldDeclaration
+            {
+                ReturnType = new SimpleType("Validation"),
+                Variables = { 
+                    new VariableInitializer("validation",
+                        new ObjectCreateExpression(new SimpleType("Validation")))
+                }
+            };
+            return expr;
+        }
     }
 }
