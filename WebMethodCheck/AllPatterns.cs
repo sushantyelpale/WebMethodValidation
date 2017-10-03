@@ -17,45 +17,128 @@ namespace WebMethodCheck
 {
     class AllPatterns
     {
-        public IfElseStatement IfElStmtInt(string varName)
+        public UnaryOperatorExpression IfElseValidMethodUnary(string varName)
         {
-            var ifElStmt = new IfElseStatement{
-                Condition = new BinaryOperatorExpression{
-                    Operator = BinaryOperatorType.LessThanOrEqual,
-                    Left = new IdentifierExpression(varName),
-                    Right = new PrimitiveExpression(0)
-                },
-                TrueStatement = new ReturnStatement { 
-                    Expression = new PrimitiveExpression(false)
+            return new UnaryOperatorExpression
+            {
+                Operator = UnaryOperatorType.Not,
+                Expression = new InvocationExpression
+                {
+                    Target = new IdentifierExpression(varName)
                 }
             };
-            return ifElStmt;
         }
 
-        public IfElseStatement IfElseFloatDecimal(string varName)
+        public UnaryOperatorExpression IfElseValidMethodUnaryOld()
         {
-            var ifElseFloat = new IfElseStatement {
-                Condition = new BinaryOperatorExpression
+            return new UnaryOperatorExpression
+            {
+                Operator = UnaryOperatorType.Not,
+                Expression = new InvocationExpression
                 {
-                    Operator = BinaryOperatorType.LessThanOrEqual,
-                    Left = new IdentifierExpression(varName),
-                    Right = new PrimitiveExpression(0)
+                    Target = new IdentifierExpression(Pattern.AnyString),
+                    Arguments = { new Repeat(new AnyNode("IdentifierExpression")) }
+                }
+            };
+        }
+
+        public UnaryOperatorExpression IfElseValidMethodUnaryMemberRef()
+        {
+            return new UnaryOperatorExpression
+            {
+                Operator = UnaryOperatorType.Not,
+                Expression = new InvocationExpression
+                {
+                    Target = new MemberReferenceExpression{
+                        Target = new IdentifierExpression(Pattern.AnyString),
+                        MemberName = Pattern.AnyString,
+                    },
+                    Arguments = { new Repeat(new AnyNode("IdentifierExpression")) }
+                }
+            };
+        }
+
+
+        public BinaryOperatorExpression IfElseValidMethodBinary()
+        {
+            return new BinaryOperatorExpression
+            {
+                Left = new InvocationExpression
+                {
+                    Target = new IdentifierExpression(Pattern.AnyString),
+                    Arguments = { new Repeat(new AnyNode("IdentifierExpression"))}
+                },
+                Operator = BinaryOperatorType.Equality,
+                Right = new AnyNode("PrimitiveExpression")
+            };
+        }
+
+        public BinaryOperatorExpression IfElseValidMethodBinaryMemberRef()
+        {
+            return new BinaryOperatorExpression
+            {
+                Left = new InvocationExpression
+                {
+                    Target = new MemberReferenceExpression{
+                       Target = new IdentifierExpression(Pattern.AnyString),
+                       MemberName = Pattern.AnyString
+                    },
+
+                    Arguments = { new Repeat(new AnyNode("IdentifierExpression")) }
+                },
+                Operator = BinaryOperatorType.Equality,
+                Right = new AnyNode("PrimitiveExpression")
+            };
+        }
+
+        public IfElseStatement IfElStmtInt(string varName)
+        {
+            return new IfElseStatement
+            {
+                Condition = new InvocationExpression
+                {
+                    Target = new MemberReferenceExpression
+                    {
+                        Target = new IdentifierExpression("validation"),
+                        MemberName = "IsValidInt"
+                    },
+                    Arguments = { new IdentifierExpression(varName) }
                 },
                 TrueStatement = new ReturnStatement
                 {
                     Expression = new PrimitiveExpression(true)
                 }
             };
-            return ifElseFloat;
+        }
+
+        public IfElseStatement IfElseFloatDecimal(string varName)
+        {
+            return new IfElseStatement
+            {
+                Condition = new InvocationExpression
+                {
+                    Target = new MemberReferenceExpression
+                    {
+                        Target = new IdentifierExpression("validation"),
+                        MemberName = "IsValidDecimal"
+                    },
+                    Arguments = { new IdentifierExpression(varName) }
+                },
+                TrueStatement = new ReturnStatement
+                {
+                    Expression = new PrimitiveExpression(true)
+                }
+            };
         }
 
         public IfElseStatement IfElStmtStr(string varName)
         {
-            var ifElStmt = new IfElseStatement
+            return new IfElseStatement
             {
                 Condition = new InvocationExpression
                 {
-                    Target = new MemberReferenceExpression { 
+                    Target = new MemberReferenceExpression
+                    {
                         Target = new IdentifierExpression("validation"),
                         MemberName = "IsValidString"
                     },
@@ -66,18 +149,16 @@ namespace WebMethodCheck
                     Expression = new PrimitiveExpression(true)
                 }
             };
-            return ifElStmt;
         }
 
         public ParameterDeclaration parDecl(string varName, string val)
         {
-            var expr = new ParameterDeclaration( new PrimitiveType(varName), val);
-            return expr;
+            return new ParameterDeclaration(new PrimitiveType(varName), val);
         }
 
         public IfElseStatement IfElseTryCall(string mtdhName)
         {
-            var expr = new IfElseStatement
+            return new IfElseStatement
             {
                 Condition = new UnaryOperatorExpression
                 {
@@ -87,29 +168,29 @@ namespace WebMethodCheck
                         Target = new IdentifierExpression(mtdhName)
                     }
                 },
-                TrueStatement = new ReturnStatement { 
+                TrueStatement = new ReturnStatement
+                {
                 }
             };
-            return expr;
         }
 
-        public FieldDeclaration PageNameGlobalFieldDecl(string className)
+        public  FieldDeclaration PageNameGlobalFieldDecl(string className)
         {
-            var expr = new FieldDeclaration{
-                Modifiers = Modifiers.Static, 
-                ReturnType =  new PrimitiveType("string"),
-                  Variables = {
+            return new FieldDeclaration
+            {
+                Modifiers = Modifiers.Static,
+                ReturnType = new PrimitiveType("string"),
+                Variables = {
                       new VariableInitializer(
                           "pageName",
                           new PrimitiveExpression(className))
                   }
             };
-            return expr;
         }
 
-        public FieldDeclaration PageNameGlobalFieldDecl1(string className)
+        public  FieldDeclaration PageNameGlobalFieldDecl1(string className)
         {
-            var expr = new FieldDeclaration
+            return new FieldDeclaration
             {
                 Modifiers = Modifiers.Static | Modifiers.Public,
                 ReturnType = new PrimitiveType("string"),
@@ -119,12 +200,11 @@ namespace WebMethodCheck
                           new PrimitiveExpression(className))
                   }
             };
-            return expr;
         }
 
         public ExpressionStatement AccessControlExpression(string MethodName)
         {
-            var Expr = new ExpressionStatement
+            return new ExpressionStatement
             {
                 Expression = new InvocationExpression
                 {
@@ -136,23 +216,21 @@ namespace WebMethodCheck
                     Arguments = { new IdentifierExpression("pageName") }
                 }
             };
-            return Expr;
         }
-        
+
         // Using ORP Decl
         public UsingDeclaration ORPUsingDecl()
         {
-            var expr = new UsingDeclaration
+            return new UsingDeclaration
             {
                 Import = new SimpleType("ORP")
             };
-            return expr;
         }
 
         // web method to add
         public MethodDeclaration ValidationMthd(string str)
         {
-            var expr = new MethodDeclaration
+            return new MethodDeclaration
             {
                 Modifiers = Modifiers.Public,
                 //ModifierTokens = ,
@@ -165,13 +243,12 @@ namespace WebMethodCheck
                     }
                 }
             };
-            return expr;
         }
 
         // Validation validation = new Validation();
         public FieldDeclaration ValidationFieldDecl()
         {
-            var expr = new FieldDeclaration
+            return new FieldDeclaration
             {
                 ReturnType = new SimpleType("Validation"),
                 Variables = { 
@@ -179,7 +256,6 @@ namespace WebMethodCheck
                         new ObjectCreateExpression(new SimpleType("Validation")))
                 }
             };
-            return expr;
         }
     }
 }

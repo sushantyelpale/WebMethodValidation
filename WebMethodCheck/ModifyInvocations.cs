@@ -58,6 +58,7 @@ namespace WebMethodCheck
                                 break;
                         case 2: WriteValidationMethodBody(file, script);
                                 InsertIfElseInWebmethodTry(file, script);
+                                DummyTextForTryCallValidation(file, script);
                                 AddPageNameGlobalinClass(file, script);
                                 CheckTryCatchInWebMethodBody(file, script);
                                 break;
@@ -205,7 +206,7 @@ namespace WebMethodCheck
                         script.InsertBefore(locationToInsert, allPatterns.IfElStmtInt(varName));
                     else if (dataType.Contains("string") || dataType.Contains("String"))
                         script.InsertBefore(locationToInsert, allPatterns.IfElStmtStr(varName));
-                    else if (dataType.Contains("float") || dataType.Contains("decimal"))
+                    else if (dataType.Contains("float") || dataType.Contains("decimal") || dataType.Contains("Decimal"))
                         script.InsertBefore(locationToInsert, allPatterns.IfElseFloatDecimal(varName));
                     else
                         script.InsertText(script.GetCurrentOffset(locationToInsert.StartLocation),"DummyText_DatatypeIsDifferent ");
@@ -231,18 +232,28 @@ namespace WebMethodCheck
                
                 int parameterOffset = script.GetCurrentOffset(expr.GetChildByRole(Roles.RPar).StartLocation) - 1;
                 script.InsertText(parameterOffset, str);
+
+                // putting Return Vriable Name in If Else Block.
                 if(expr.GetParent<MethodDeclaration>().ReturnType.GetText()!= "void")
                 {
-                    var returnStmt = expr.GetParent<MethodDeclaration>().Body.LastChild.PrevSibling.FirstChild;
+                    var returnVar = expr.GetParent<MethodDeclaration>().Body.LastChild.PrevSibling.FirstChild;
                     int retValueOffset = script.GetCurrentOffset(expr.LastChild.LastChild.StartLocation);
-                    if (returnStmt.GetText() == "return")
+                    if (returnVar.GetText() == "return")
                     {
-                        string retString = returnStmt.NextSibling.GetText();
+                        string retString = returnVar.NextSibling.GetText();
                         script.InsertText(retValueOffset, " " + retString);
                     }
                     else
                         script.InsertText(retValueOffset, " DummyText");
                 }
+            }
+        }
+
+        private void DummyTextForTryCallValidation(CSharpFile file, DocumentScript script)
+        {
+            foreach (var expr in file.IndexOfIfElStmtValidation)
+            {
+                script.InsertText(script.GetCurrentOffset(expr.StartLocation), "DummyText ");
             }
         }
         // Add pageName parameter in clas global declaration

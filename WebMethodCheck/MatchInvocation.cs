@@ -15,7 +15,7 @@ namespace WebMethodCheck
 {
     class MatchInvocation
     {
-        AllPatterns Pat = new AllPatterns();
+        AllPatterns allPatterns = new AllPatterns();
         PrintFunction PrFun = new PrintFunction();
 
         public void FindInvocationTypeMethod(Solution solution, int count)
@@ -24,7 +24,10 @@ namespace WebMethodCheck
             {
                 if (Path.GetFileName(file.fileName).EndsWith("AssemblyInfo.cs"))
                     continue;
-                //if (!Path.GetFileName(file.fileName).EndsWith("ElectricityBill.aspx.cs"))
+                if (Path.GetFileName(file.fileName).EndsWith("Validation.cs"))
+                    continue;
+
+                //if (!Path.GetFileName(file.fileName).EndsWith("RetailerDashboard.aspx.cs"))
                 //    continue;
                 var astResolver = new CSharpAstResolver(file.project.Compilation, file.syntaxTree, file.unresolvedTypeSystemForFile);
                 foreach (var invocation in file.syntaxTree.Descendants.OfType<AstNode>())
@@ -61,6 +64,21 @@ namespace WebMethodCheck
                 invocation.GetParent<MethodDeclaration>().FirstChild.GetText().Contains("WebMethod"))
                     file.IndexOfTryCatchStmt.Add((TryCatchStatement)invocation);
         }
+
+        public bool FoundWebMethodAttribute(AstNode invocation)
+        {
+            bool foundWebMethodAttribute = false;
+            foreach (var attribute in invocation.Children.OfType<AttributeSection>())
+            {
+                if (attribute.GetText().Contains("WebMethod"))
+                {
+                    foundWebMethodAttribute = true;
+                    break;
+                }
+            }
+            return foundWebMethodAttribute;
+        }
+
         public void FindValidationMethod(AstNode invocation, CSharpFile file)
         {
             if (invocation.NextSibling != null)
@@ -69,23 +87,79 @@ namespace WebMethodCheck
                 if (invocation.GetType().Name == "MethodDeclaration" &&
                     next.GetType().Name == "MethodDeclaration")
                 {
-                    if (next.GetText().Contains("WebMethod") )
+                    if (FoundWebMethodAttribute(next))
                         file.IndexOfWebMthdDecl.Add((MethodDeclaration)invocation);
                 }
             }
         }
         public void FindIfElseInWebMethod(AstNode invocation, CSharpFile file) 
-        { 
-            if(invocation.GetType().Name == "IfElseStatement" && invocation.Parent.Parent.GetType().Name == "TryCatchStatement")
+        {
+            if (invocation.GetType().Name == "IfElseStatement" && 
+                FoundWebMethodAttribute(invocation.GetParent<MethodDeclaration>()))
             {
-                string strToCheck = "null";
+                Expression childOfTypeRoleCondition = invocation.GetChildByRole(Roles.Condition);
+                if (childOfTypeRoleCondition.GetType().Name == "UnaryOperatorExpression") {
+                    string strToCheck = "Valid" + invocation.GetParent<MethodDeclaration>().Name;
+
+                    if (allPatterns.IfElseValidMethodUnary(strToCheck).Match(childOfTypeRoleCondition).Success)
+                        file.IndexOfIfElStmt.Add((IfElseStatement)invocation);
+
+                    else if(allPatterns.IfElseValidMethodUnaryOld().Match(childOfTypeRoleCondition).Success)
+                    {
+                        string strToCheckforAlreadyDeclared = childOfTypeRoleCondition.Descendants.OfType<IdentifierExpression>().First().GetText();
+                        if (strToCheckforAlreadyDeclared.IndexOf(("valid"), StringComparison.OrdinalIgnoreCase) > 0 )
+                            file.IndexOfIfElStmtValidation.Add((IfElseStatement)invocation);
+                    }
+                    else if (allPatterns.IfElseValidMethodUnaryMemberRef().Match(childOfTypeRoleCondition).Success)
+                    {
+                        string strToCheckAlreadyDecare = childOfTypeRoleCondition.Descendants.OfType<MemberReferenceExpression>().First().LastChild.GetText();
+                        if (strToCheckAlreadyDecare.IndexOf(("valid"), StringComparison.OrdinalIgnoreCase) > 0)
+                            file.IndexOfIfElStmtValidation.Add((IfElseStatement)invocation);
+                    }
+                }
+                else if (childOfTypeRoleCondition.GetType().Name == "BinaryOperatorExpression")
+                {
+                    if (allPatterns.IfElseValidMethodBinary().Match(childOfTypeRoleCondition).Success)
+                    {
+                        string strToCheck = childOfTypeRoleCondition.Descendants.OfType<IdentifierExpression>().First().GetText();
+                        if (strToCheck.IndexOf("Valid", StringComparison.OrdinalIgnoreCase) > 0)
+                            file.IndexOfIfElStmtValidation.Add((IfElseStatement)invocation);
+                    }
+                    else if (allPatterns.IfElseValidMethodBinaryMemberRef().Match(childOfTypeRoleCondition).Success)
+                    {
+                        string strToCheck = childOfTypeRoleCondition.Descendants.OfType<IdentifierExpression>().First().NextSibling.GetText();
+                        if (strToCheck.IndexOf("Valid", StringComparison.OrdinalIgnoreCase) > 0)
+                            file.IndexOfIfElStmtValidation.Add((IfElseStatement)invocation);
+                    }
+                }
+                //else if ()
+             //   if(childRole == "UnaryOperatorExpression" || childRole == "BinaryOperatorExpression")
+               //     file.IndexOfIfElStmt.Add((IfElseStatement)invocation);
+/*                file.IndexOfIfElStmt.Add((IfElseStatement)invocation);
+                string strToCheck = null;
                 try{
-                    strToCheck = invocation.FirstChild.NextSibling.NextSibling.FirstChild.NextSibling.FirstChild.GetText();
+                    //strToCheck = invocation.FirstChild.NextSibling.NextSibling.FirstChild.NextSibling.FirstChild.GetText();
+                    strToCheck = invocation.GetChildByRole(Roles.Condition).DescendantsAndSelf.OfType<InvocationExpression>().First().Children.OfType<IdentifierExpression>().First().GetText();
                 }
                 catch(Exception) {}
-                if(strToCheck.Contains(invocation.GetParent<MethodDeclaration>().Name))  {
-                    file.IndexOfIfElStmt.Add((IfElseStatement)invocation);
+                if (strToCheck != null)
+                {
+                    if (strToCheck.IndexOf("Valid", StringComparison.OrdinalIgnoreCase) >= 0  && 
+                        FoundWebMethodAttribute(invocation.GetParent<MethodDeclaration>()))
+                    {
+                        if (strToCheck == "Valid" + invocation.GetParent<MethodDeclaration>().Name)
+                        {
+                            file.IndexOfIfElStmt.Add((IfElseStatement)invocation);
+                        }
+                        else
+                        {
+                            invocation.Descendants.OfType<InvocationExpression>().First().GetNodeAt(invocation.StartLocation, null);
+                            //foreach(var expr)
+                        }
+//                        else if()
+                    }
                 }
+ */ 
             }
         }
         public void FindClassOfWebMethods(AstNode invocation, CSharpFile file)
