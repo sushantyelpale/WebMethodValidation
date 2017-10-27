@@ -92,6 +92,7 @@ namespace ORPWebMethod
             openfd.ShowDialog();
             filename = openfd.FileName;
             textBox2.Text = filename;
+            waterMarkTextBox1.Text = filename;
         }
 
         private void textBox2_TextChanged(object sender, EventArgs e)
@@ -137,6 +138,16 @@ namespace ORPWebMethod
                     MessageBox.Show("Path is Empty");
                 }
             }
+        }
+
+        private void sushant(object sender, EventArgs e)
+        {
+
+        }
+
+        private void waterMarkTextBox1_TextChanged(object sender, EventArgs e)
+        {
+
         }
     }
 }

@@ -40,6 +40,7 @@
             this.button4 = new System.Windows.Forms.Button();
             this.button5 = new System.Windows.Forms.Button();
             this.button6 = new System.Windows.Forms.Button();
+            this.waterMarkTextBox1 = new ORPWebMethod.WaterMarkTextBox();
             this.SuspendLayout();
             // 
             // button1
@@ -98,7 +99,9 @@
             // 
             // textBox2
             // 
-            this.textBox2.Location = new System.Drawing.Point(95, 45);
+            this.textBox2.AccessibleDescription = "";
+            this.textBox2.AccessibleName = "";
+            this.textBox2.Location = new System.Drawing.Point(95, 44);
             this.textBox2.Name = "textBox2";
             this.textBox2.Size = new System.Drawing.Size(268, 20);
             this.textBox2.TabIndex = 6;
@@ -106,7 +109,7 @@
             // 
             // button3
             // 
-            this.button3.Location = new System.Drawing.Point(383, 45);
+            this.button3.Location = new System.Drawing.Point(383, 42);
             this.button3.Name = "button3";
             this.button3.Size = new System.Drawing.Size(75, 23);
             this.button3.TabIndex = 7;
@@ -153,24 +156,35 @@
             this.button6.UseVisualStyleBackColor = true;
             this.button6.Click += new System.EventHandler(this.button6_Click);
             // 
+            // waterMarkTextBox1
+            // 
+            this.waterMarkTextBox1.Font = new System.Drawing.Font("Microsoft Sans Serif", 8.25F);
+            this.waterMarkTextBox1.Location = new System.Drawing.Point(95, 44);
+            this.waterMarkTextBox1.Name = "waterMarkTextBox1";
+            this.waterMarkTextBox1.Size = new System.Drawing.Size(268, 20);
+            this.waterMarkTextBox1.TabIndex = 12;
+            this.waterMarkTextBox1.WaterMarkColor = System.Drawing.Color.Gray;
+            this.waterMarkTextBox1.WaterMarkText = "Choose either .sln or .csproj file";
+            // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 13F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ScrollBar;
             this.ClientSize = new System.Drawing.Size(508, 433);
+            this.Controls.Add(this.waterMarkTextBox1);
             this.Controls.Add(this.button6);
             this.Controls.Add(this.button5);
             this.Controls.Add(this.button4);
             this.Controls.Add(this.label4);
             this.Controls.Add(this.button3);
-            this.Controls.Add(this.textBox2);
             this.Controls.Add(this.textBox1);
             this.Controls.Add(this.label3);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.button2);
             this.Controls.Add(this.button1);
+            this.Controls.Add(this.textBox2);
             this.Name = "Form1";
             this.Text = "ORPWebMethod";
             this.Load += new System.EventHandler(this.Form1_Load);
@@ -193,6 +207,7 @@
         private System.Windows.Forms.Button button4;
         private System.Windows.Forms.Button button5;
         private System.Windows.Forms.Button button6;
+        private ORPWebMethod.WaterMarkTextBox waterMarkTextBox1;
     }
 }
 
